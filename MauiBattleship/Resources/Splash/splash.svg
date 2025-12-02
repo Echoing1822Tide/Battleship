@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <g fill="white">
+    <!-- Simple battleship silhouette -->
+    <path d="M50 280 L100 350 L412 350 L462 280 L50 280 Z"/>
+    <rect x="150" y="230" width="50" height="50"/>
+    <rect x="220" y="200" width="70" height="80"/>
+    <rect x="310" y="240" width="40" height="40"/>
+    <rect x="250" y="130" width="10" height="70"/>
+    <circle cx="255" cy="120" r="15"/>
+  </g>
+</svg>
