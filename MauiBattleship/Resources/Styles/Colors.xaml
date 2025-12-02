@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    
+    <!-- Primary Colors -->
+    <Color x:Key="Primary">#4361ee</Color>
+    <Color x:Key="PrimaryDark">#3a0ca3</Color>
+    <Color x:Key="PrimaryLight">#4cc9f0</Color>
+    
+    <!-- Accent Colors -->
+    <Color x:Key="Accent">#f72585</Color>
+    <Color x:Key="AccentLight">#ff758f</Color>
+    
+    <!-- Background Colors -->
+    <Color x:Key="BackgroundDark">#1a1a2e</Color>
+    <Color x:Key="BackgroundMedium">#16213e</Color>
+    <Color x:Key="BackgroundLight">#0f3460</Color>
+    
+    <!-- Cell Colors -->
+    <Color x:Key="CellWater">#0077b6</Color>
+    <Color x:Key="CellShip">#6c757d</Color>
+    <Color x:Key="CellHit">#e63946</Color>
+    <Color x:Key="CellMiss">#f8f9fa</Color>
+    
+    <!-- Status Colors -->
+    <Color x:Key="Success">#2a9d8f</Color>
+    <Color x:Key="Warning">#e9c46a</Color>
+    <Color x:Key="Danger">#e76f51</Color>
+    
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimary">#ffffff</Color>
+    <Color x:Key="TextSecondary">#adb5bd</Color>
+
+</ResourceDictionary>

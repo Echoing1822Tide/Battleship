@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MauiBattleship.ViewModels"
+             x:Class="MauiBattleship.Views.GamePage"
+             x:DataType="viewmodels:GameViewModel"
+             Title="Battleship"
+             BackgroundColor="#1a1a2e">
+
+    <ContentPage.BindingContext>
+        <viewmodels:GameViewModel />
+    </ContentPage.BindingContext>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="10">
+        
+        <!-- Header / Status -->
+        <VerticalStackLayout Grid.Row="0" Spacing="5" Margin="0,0,0,10">
+            <Label Text="BATTLESHIP" 
+                   FontSize="28" 
+                   FontAttributes="Bold" 
+                   TextColor="White" 
+                   HorizontalOptions="Center" />
+            
+            <Label Text="{Binding CurrentPhaseText}" 
+                   FontSize="16" 
+                   TextColor="#4cc9f0" 
+                   HorizontalOptions="Center" />
+            
+            <Frame BackgroundColor="#16213e" 
+                   BorderColor="#4cc9f0" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <Label Text="{Binding StatusMessage}" 
+                       FontSize="14" 
+                       TextColor="White" 
+                       HorizontalOptions="Center" />
+            </Frame>
+        </VerticalStackLayout>
+
+        <!-- Ship Placement Controls -->
+        <HorizontalStackLayout Grid.Row="1" 
+                               Spacing="10" 
+                               HorizontalOptions="Center" 
+                               IsVisible="{Binding IsPlacingShips}"
+                               Margin="0,0,0,10">
+            <Label Text="{Binding CurrentShipToPlace}" 
+                   TextColor="White" 
+                   VerticalOptions="Center" />
+            <Button Text="{Binding OrientationText}" 
+                    Command="{Binding ToggleOrientationCommand}" 
+                    BackgroundColor="#4361ee"
+                    TextColor="White" />
+        </HorizontalStackLayout>
+
+        <!-- Game Boards -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Spacing="20" HorizontalOptions="Center">
+                
+                <!-- Computer's Board (Enemy) -->
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Enemy Fleet" 
+                           FontSize="18" 
+                           FontAttributes="Bold" 
+                           TextColor="#f72585" 
+                           HorizontalOptions="Center" />
+                    <Label Text="{Binding ComputerShipsSunk, StringFormat='Ships Sunk: {0}/5'}" 
+                           FontSize="12" 
+                           TextColor="#ff758f" 
+                           HorizontalOptions="Center" />
+                    
+                    <Border Stroke="#4cc9f0" 
+                            StrokeThickness="2" 
+                            StrokeShape="RoundRectangle 5">
+                        <Grid x:Name="ComputerBoardGrid" 
+                              ColumnSpacing="1" 
+                              RowSpacing="1" 
+                              BackgroundColor="#16213e" 
+                              Padding="2" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Player's Board -->
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Your Fleet" 
+                           FontSize="18" 
+                           FontAttributes="Bold" 
+                           TextColor="#4cc9f0" 
+                           HorizontalOptions="Center" />
+                    <Label Text="{Binding PlayerShipsSunk, StringFormat='Ships Sunk: {0}/5'}" 
+                           FontSize="12" 
+                           TextColor="#4895ef" 
+                           HorizontalOptions="Center" />
+                    
+                    <Border Stroke="#4cc9f0" 
+                            StrokeThickness="2" 
+                            StrokeShape="RoundRectangle 5">
+                        <Grid x:Name="PlayerBoardGrid" 
+                              ColumnSpacing="1" 
+                              RowSpacing="1" 
+                              BackgroundColor="#16213e" 
+                              Padding="2" />
+                    </Border>
+                </VerticalStackLayout>
+                
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Bottom Controls -->
+        <VerticalStackLayout Grid.Row="3" Spacing="10" Margin="0,10,0,0">
+            
+            <!-- Game Over Result -->
+            <Frame BackgroundColor="{Binding GameResultText, Converter={StaticResource ResultColorConverter}}" 
+                   IsVisible="{Binding IsGameOver}" 
+                   CornerRadius="10" 
+                   Padding="20">
+                <Label Text="{Binding GameResultText}" 
+                       FontSize="24" 
+                       FontAttributes="Bold" 
+                       TextColor="White" 
+                       HorizontalOptions="Center" />
+            </Frame>
+            
+            <Button Text="New Game" 
+                    Command="{Binding NewGameCommand}" 
+                    BackgroundColor="#4361ee" 
+                    TextColor="White" 
+                    FontSize="18" 
+                    HeightRequest="50" 
+                    HorizontalOptions="Fill" />
+        </VerticalStackLayout>
+        
+    </Grid>
+</ContentPage>
