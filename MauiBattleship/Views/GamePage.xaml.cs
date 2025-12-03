@@ -1,29 +1,26 @@
-using MauiBattleship.Models;
-using MauiBattleship.ViewModels;
+using MauiBattleship.Core.Services;
+using System;
 
 namespace MauiBattleship.Views;
 
 public partial class GamePage : ContentPage
 {
-    private const int CellSize = 30;
-    private GameViewModel? _viewModel;
+    private readonly IFleetService _fleet;
 
-    public GamePage()
+    public GamePage(IFleetService fleet)
     {
         InitializeComponent();
-        
+        _fleet = fleet;
         Loaded += OnLoaded;
     }
 
     private void OnLoaded(object? sender, EventArgs e)
     {
-        _viewModel = BindingContext as GameViewModel;
-        if (_viewModel != null)
-        {
-            InitializeBoards();
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        }
+        var lines = _fleet.DemoInterfaces();
+        Output.Text = string.Join(Environment.NewLine, lines);
     }
+}
+
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {

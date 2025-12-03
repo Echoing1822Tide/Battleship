@@ -7,7 +7,14 @@
              Title="Battleship"
              BackgroundColor="#1a1a2e">
 
-    <ContentPage.BindingContext>
+	<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            x:Class="MauiBattleship.Views.GamePage">
+	<ScrollView>
+		<Label x:Name="Output" Padding="16" />
+	</ScrollView>
+</ContentPage>
+
+	<ContentPage.BindingContext>
         <viewmodels:GameViewModel />
     </ContentPage.BindingContext>
 
