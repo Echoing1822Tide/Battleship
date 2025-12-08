@@ -1,11 +1,15 @@
 using MauiBattleship.Core.Services;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using Microsoft.Maui.ApplicationModel;
 
 namespace MauiBattleship.Views;
 
 public partial class GamePage : ContentPage
 {
     private readonly IFleetService _fleet;
+    private GameViewModel? _viewModel;
 
     public GamePage(IFleetService fleet)
     {
@@ -19,12 +23,10 @@ public partial class GamePage : ContentPage
         var lines = _fleet.DemoInterfaces();
         Output.Text = string.Join(Environment.NewLine, lines);
     }
-}
 
-
-    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(GameViewModel.PlayerCells) || 
+        if (e.PropertyName == nameof(GameViewModel.PlayerCells) ||
             e.PropertyName == nameof(GameViewModel.ComputerCells))
         {
             // Rebuild the grids if cells collection changes
@@ -46,14 +48,12 @@ public partial class GamePage : ContentPage
         grid.RowDefinitions.Clear();
         grid.ColumnDefinitions.Clear();
 
-        // Create row and column definitions
         for (int i = 0; i < GameBoard.BoardSize; i++)
         {
             grid.RowDefinitions.Add(new RowDefinition(CellSize));
             grid.ColumnDefinitions.Add(new ColumnDefinition(CellSize));
         }
 
-        // Add cells
         foreach (var cellVm in cells)
         {
             var button = CreateCellButton(cellVm, isPlayerBoard);
@@ -74,11 +74,9 @@ public partial class GamePage : ContentPage
             BorderWidth = 0
         };
 
-        // Bind properties
         button.SetBinding(Button.BackgroundColorProperty, new Binding(nameof(CellViewModel.CellColor), source: cellVm));
         button.SetBinding(Button.TextProperty, new Binding(nameof(CellViewModel.CellText), source: cellVm));
 
-        // Handle click
         button.Clicked += (s, e) =>
         {
             if (_viewModel == null) return;

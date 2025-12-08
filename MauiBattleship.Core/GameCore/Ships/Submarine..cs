@@ -8,6 +8,6 @@ public sealed class Submarine : ShipBase, IFireWeapon, ISilentRunner
     public Submarine() : base() { }
     public Submarine(string name, int size) : base(name, size) { }
 
-    public string Fire() => $"{Name}: Torpedo away — quiet run!";
-    public string RunSilent() => $"{Name}: Running silent… sonar contacts minimal.";
+    public string Fire() => $"{Name}: Torpedo away ï¿½ quiet run!";
+    public string RunSilent() => $"{Name}: Running silentï¿½ sonar contacts minimal.";
 }

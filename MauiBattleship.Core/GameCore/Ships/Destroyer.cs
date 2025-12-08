@@ -8,5 +8,5 @@ public sealed class Destroyer : ShipBase, IFireWeapon
     public Destroyer() : base() { }
     public Destroyer(string name, int size) : base(name, size) { }
 
-    public string Fire() => $"{Name}: Broadside cannons — BOOM!";
+    public string Fire() => $"{Name}: Broadside cannons ï¿½ BOOM!";
 }

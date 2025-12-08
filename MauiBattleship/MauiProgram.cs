@@ -15,6 +15,8 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
         builder.Services.AddSingleton<IFleetService, FleetService>(); // DI
+        builder.Services.AddSingleton<GameViewModel>();
+        builder.Services.AddSingleton<GamePage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

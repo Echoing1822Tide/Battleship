@@ -1,0 +1,122 @@
+﻿@page "/"
+@using MauiBattleship.Models
+@using MauiBattleship.Services
+
+<PageTitle>Battleship</PageTitle>
+
+<h1>Battleship</h1>
+
+<button class="btn btn-primary" @onclick="NewGame">New Game</button>
+
+<p class="mt-3">@StatusMessage</p>
+
+<div class="row mt-3">
+    <div class="col">
+        <h3>Player Board</h3>
+        @RenderBoard(_game.PlayerBoard, OnPlayerClick)
+    </div>
+    <div class="col">
+        <h3>Computer Board</h3>
+        @RenderBoard(_game.ComputerBoard, OnComputerClick)
+    </div>
+</div>
+
+@code {
+    private readonly GameService _game = new();
+    private string StatusMessage { get; set; } = "Welcome! Click New Game to start.";
+
+    private void NewGame()
+    {
+        _game.StartNewGame();
+        StatusMessage = "New game started. (Web UI ship placement still to come.)";
+    }
+
+    private void OnPlayerClick(int row, int col)
+    {
+        // Right now, this just shows that clicks work.
+        // Later we hook this up to ship placement logic.
+        StatusMessage = $"Player board click at ({row + 1}, {col + 1}).";
+    }
+
+    private void OnComputerClick(int row, int col)
+    {
+        var result = _game.PlayerAttack(row, col);
+        if (result is null)
+        {
+            StatusMessage = "You can't attack yet (not in PlayerTurn phase).";
+            return;
+        }
+
+        if (result.AlreadyAttacked)
+        {
+            StatusMessage = "You already attacked that cell.";
+            return;
+        }
+
+        if (result.IsHit)
+        {
+            StatusMessage = result.IsSunk
+                ? $"Hit and sunk enemy {result.SunkShipName}!"
+                : "Hit!";
+        }
+        else
+        {
+            StatusMessage = "Miss!";
+        }
+
+        // GameService flips to ComputerTurn; we call the AI attack.
+        if (_game.CurrentPhase == GamePhase.ComputerTurn)
+        {
+            var compResult = _game.ComputerAttack();
+            // Optional: add more messages later for compResult
+        }
+    }
+
+    private RenderFragment RenderBoard(GameBoard board, Action<int,int> onClick) => builder =>
+    {
+        builder.OpenElement(0, "table");
+        builder.AddAttribute(1, "class", "table table-bordered table-sm");
+        builder.AddAttribute(2, "style", "width:auto; border-collapse:collapse; text-align:center;");
+
+        int seq = 3;
+
+        for (int r = 0; r < GameBoard.BoardSize; r++)
+        {
+            builder.OpenElement(seq++, "tr");
+
+            for (int c = 0; c < GameBoard.BoardSize; c++)
+            {
+                var cell = board.Cells[r, c];
+
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "style",
+                    $"width:30px;height:30px;background:{CellColor(cell)};cursor:pointer;");
+                builder.AddAttribute(seq++, "onclick",
+                    EventCallback.Factory.Create(this, () => onClick(r, c)));
+                builder.AddContent(seq++, CellText(cell));
+                builder.CloseElement(); // td
+            }
+
+            builder.CloseElement(); // tr
+        }
+
+        builder.CloseElement(); // table
+    };
+
+    private static string CellText(Cell cell) =>
+        cell.State switch
+        {
+            CellState.Hit  => "X",
+            CellState.Miss => "•",
+            _              => ""
+        };
+
+    private static string CellColor(Cell cell) =>
+        cell.State switch
+        {
+            CellState.Hit  => "red",
+            CellState.Miss => "white",
+            CellState.Ship => "gray",      // later we can hide ships on the computer board
+            _              => "lightblue"
+        };
+}

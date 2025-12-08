@@ -1,4 +1,4 @@
-using MauiBattleship.GameCore;   // or Battleship.GameCore if that’s your root
+using MauiBattleship.GameCore;   // or Battleship.GameCore if thatï¿½s your root
 
 public partial class AppShell : Shell
 {

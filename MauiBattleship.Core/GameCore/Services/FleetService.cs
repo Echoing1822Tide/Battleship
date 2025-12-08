@@ -30,7 +30,7 @@ public sealed class FleetService : IFleetService
             if (ship is IFireWeapon shooter)
                 log.Add($"{ship}: {shooter.Fire()}");
 
-            // Demonstrate the “special ability” on the one class that has it
+            // Demonstrate the ï¿½special abilityï¿½ on the one class that has it
             if (ship is ISilentRunner ghost)
                 log.Add($"{ship}: {ghost.RunSilent()}");
         }
