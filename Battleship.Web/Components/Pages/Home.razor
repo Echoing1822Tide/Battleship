@@ -1,84 +1,200 @@
 ﻿@page "/"
 @using MauiBattleship.Models
 @using MauiBattleship.Services
+@inject GameService Game
 
 <PageTitle>Battleship</PageTitle>
 
-<h1>Battleship</h1>
+<div class="battleship-page">
+    <div class="battleship-header">
+        <h1 class="display-title">Battleship</h1>
+        <div class="subtitle-row">
+            <span class="subtitle">Player vs Computer</span>
+            <span class="phase-label">
+                Phase:
+                <span class="phase-value">@GetPhaseText()</span>
+            </span>
+        </div>
 
-<button class="btn btn-primary" @onclick="NewGame">New Game</button>
+        <div class="controls-row">
+            <button class="btn primary" @onclick="OnNewGameClicked">
+                NEW GAME
+            </button>
 
-<p class="mt-3">@StatusMessage</p>
+            <button class="btn secondary" @onclick="OnRotateClicked">
+                @GetRotateButtonText()
+            </button>
+        </div>
 
-<div class="row mt-3">
-    <div class="col">
-        <h3>Player Board</h3>
-        @RenderBoard(_game.PlayerBoard, OnPlayerClick)
+        <div class="status-banner">
+            @StatusMessage
+        </div>
     </div>
-    <div class="col">
-        <h3>Computer Board</h3>
-        @RenderBoard(_game.ComputerBoard, OnComputerClick)
+
+    <div class="boards-row">
+        <!-- Player board -->
+        <div class="board-card">
+            <div class="board-card-header">
+                <h2>Your Fleet</h2>
+                <p>
+                    Place ships by clicking cells while in
+                    <strong>Placing Ships</strong>.
+                </p>
+            </div>
+
+            <div class="board-card-body">
+                @RenderBoard(Game.PlayerBoard, OnPlayerCellClick, true)
+            </div>
+
+            <div class="board-card-footer">
+                Ships sunk: @Game.PlayerBoard.SunkShipCount / @Game.PlayerBoard.TotalShipCount
+            </div>
+        </div>
+
+        <!-- Computer board -->
+        <div class="board-card">
+            <div class="board-card-header">
+                <h2>Enemy Waters</h2>
+                <p>
+                    When it’s <strong>Your Turn</strong>, click to fire on enemy cells.
+                </p>
+            </div>
+
+            <div class="board-card-body">
+                @RenderBoard(Game.ComputerBoard, OnComputerCellClick, false)
+            </div>
+
+            <div class="board-card-footer">
+                Ships sunk: @Game.ComputerBoard.SunkShipCount / @Game.ComputerBoard.TotalShipCount
+            </div>
+        </div>
     </div>
 </div>
 
 @code {
-    private readonly GameService _game = new();
-    private string StatusMessage { get; set; } = "Welcome! Click New Game to start.";
+    private string StatusMessage = "Welcome to Battleship! Click New Game to begin.";
+    private ShipOrientation _currentOrientation = ShipOrientation.Horizontal;
 
-    private void NewGame()
+    protected override void OnInitialized()
     {
-        _game.StartNewGame();
-        StatusMessage = "New game started. (Web UI ship placement still to come.)";
+        // Keep the UI synced with GameService events
+        Game.GameStateChanged += (_, _) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+
+        Game.MessageReceived += (_, msg) =>
+        {
+            StatusMessage = msg;
+            InvokeAsync(StateHasChanged);
+        };
     }
 
-    private void OnPlayerClick(int row, int col)
+    private void OnNewGameClicked()
     {
-        // Right now, this just shows that clicks work.
-        // Later we hook this up to ship placement logic.
-        StatusMessage = $"Player board click at ({row + 1}, {col + 1}).";
-    }
+        _currentOrientation = ShipOrientation.Horizontal;
+        Game.StartNewGame();
 
-    private void OnComputerClick(int row, int col)
-    {
-        var result = _game.PlayerAttack(row, col);
-        if (result is null)
+        var nextShip = Game.GetNextShipToPlace();
+        if (nextShip is not null)
         {
-            StatusMessage = "You can't attack yet (not in PlayerTurn phase).";
-            return;
-        }
-
-        if (result.AlreadyAttacked)
-        {
-            StatusMessage = "You already attacked that cell.";
-            return;
-        }
-
-        if (result.IsHit)
-        {
-            StatusMessage = result.IsSunk
-                ? $"Hit and sunk enemy {result.SunkShipName}!"
-                : "Hit!";
+            StatusMessage = $"Place your {nextShip.Name} ({nextShip.Size} cells).";
         }
         else
         {
-            StatusMessage = "Miss!";
-        }
-
-        // GameService flips to ComputerTurn; we call the AI attack.
-        if (_game.CurrentPhase == GamePhase.ComputerTurn)
-        {
-            var compResult = _game.ComputerAttack();
-            // Optional: add more messages later for compResult
+            StatusMessage = "Place your ships on the board.";
         }
     }
 
-    private RenderFragment RenderBoard(GameBoard board, Action<int,int> onClick) => builder =>
+    private void OnRotateClicked()
     {
-        builder.OpenElement(0, "table");
-        builder.AddAttribute(1, "class", "table table-bordered table-sm");
-        builder.AddAttribute(2, "style", "width:auto; border-collapse:collapse; text-align:center;");
+        _currentOrientation = _currentOrientation == ShipOrientation.Horizontal
+            ? ShipOrientation.Vertical
+            : ShipOrientation.Horizontal;
+    }
 
-        int seq = 3;
+    private string GetRotateButtonText()
+    {
+        return _currentOrientation == ShipOrientation.Horizontal
+            ? "Rotate Ship (Horizontal)"
+            : "Rotate Ship (Vertical)";
+    }
+
+    private string GetPhaseText()
+    {
+        return Game.CurrentPhase switch
+        {
+            GamePhase.NotStarted   => "Not Started",
+            GamePhase.PlacingShips => "Placing Ships",
+            GamePhase.PlayerTurn   => "Your Turn",
+            GamePhase.ComputerTurn => "Computer Turn",
+            GamePhase.GameOver     => "Game Over",
+            _                      => Game.CurrentPhase.ToString()
+        };
+    }
+
+    private void OnPlayerCellClick(int row, int col)
+    {
+        // Only allow placement during PlacingShips phase
+        if (Game.CurrentPhase != GamePhase.PlacingShips)
+            return;
+
+        var ship = Game.GetNextShipToPlace();
+        if (ship is null)
+            return;
+
+        bool placed = Game.PlacePlayerShip(ship, row, col, _currentOrientation);
+        if (!placed)
+        {
+            StatusMessage = "Invalid position for that ship. Try a different location or orientation.";
+            StateHasChanged();
+            return;
+        }
+
+        // If that was the last ship, GameService will switch to PlayerTurn and fire events
+        var nextShip = Game.GetNextShipToPlace();
+        if (nextShip is not null)
+        {
+            StatusMessage = $"Place your {nextShip.Name} ({nextShip.Size} cells).";
+        }
+        // If nextShip is null, GameService already sent the “All ships placed” message
+
+        StateHasChanged();
+    }
+
+    private void OnComputerCellClick(int row, int col)
+    {
+        // Only allow attacks during player's turn
+        if (Game.CurrentPhase != GamePhase.PlayerTurn)
+            return;
+
+        var result = Game.PlayerAttack(row, col);
+        if (result is null)
+            return;
+
+        // If game already won, don't let the computer shoot
+        if (Game.IsGameOver)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        // Computer takes its turn
+        if (Game.CurrentPhase == GamePhase.ComputerTurn)
+        {
+            Game.ComputerAttack();
+        }
+
+        StateHasChanged();
+    }
+
+    private RenderFragment RenderBoard(GameBoard board, Action<int, int> onClick, bool isPlayerBoard)
+        => builder =>
+    {
+        int seq = 0;
+
+        builder.OpenElement(seq++, "table");
+        builder.AddAttribute(seq++, "class", "board-table");
 
         for (int r = 0; r < GameBoard.BoardSize; r++)
         {
@@ -87,13 +203,15 @@
             for (int c = 0; c < GameBoard.BoardSize; c++)
             {
                 var cell = board.Cells[r, c];
+                var css = GetCellClass(cell, isPlayerBoard);
 
                 builder.OpenElement(seq++, "td");
-                builder.AddAttribute(seq++, "style",
-                    $"width:30px;height:30px;background:{CellColor(cell)};cursor:pointer;");
-                builder.AddAttribute(seq++, "onclick",
-                    EventCallback.Factory.Create(this, () => onClick(r, c)));
-                builder.AddContent(seq++, CellText(cell));
+                builder.AddAttribute(seq++, "class", css);
+                builder.AddAttribute(
+                    seq++,
+                    "onclick",
+                    EventCallback.Factory.Create(this, () => onClick(r, c))
+                );
                 builder.CloseElement(); // td
             }
 
@@ -103,20 +221,28 @@
         builder.CloseElement(); // table
     };
 
-    private static string CellText(Cell cell) =>
-        cell.State switch
-        {
-            CellState.Hit  => "X",
-            CellState.Miss => "•",
-            _              => ""
-        };
+    private string GetCellClass(Cell cell, bool isPlayerBoard)
+    {
+        var classes = new List<string> { "board-cell" };
 
-    private static string CellColor(Cell cell) =>
-        cell.State switch
+        if (isPlayerBoard && cell.HasShip)
         {
-            CellState.Hit  => "red",
-            CellState.Miss => "white",
-            CellState.Ship => "gray",      // later we can hide ships on the computer board
-            _              => "lightblue"
-        };
+            classes.Add("cell-ship");
+        }
+
+        switch (cell.State)
+        {
+            case CellState.Hit:
+                classes.Add("cell-hit");
+                break;
+            case CellState.Miss:
+                classes.Add("cell-miss");
+                break;
+            case CellState.Ship when !isPlayerBoard:
+                // Don’t show enemy ships directly
+                break;
+        }
+
+        return string.Join(" ", classes);
+    }
 }

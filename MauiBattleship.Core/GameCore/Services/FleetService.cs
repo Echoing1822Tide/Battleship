@@ -3,38 +3,39 @@ using MauiBattleship.Core.GameCore.Abstractions;
 using MauiBattleship.Core.GameCore.Interfaces;
 using MauiBattleship.Core.GameCore.Ships;
 
-namespace MauiBattleship.Core.Services;
-
-public interface IFleetService
+namespace MauiBattleship.Core.Services
 {
-    IEnumerable<string> DemoInterfaces();
-}
-
-public sealed class FleetService : IFleetService
-{
-    public IEnumerable<string> DemoInterfaces()
+    public interface IFleetService
     {
-        var log = new List<string>();
+        IEnumerable<string> DemoInterfaces();
+    }
 
-        // Polymorphic collection of the abstract base type
-        List<ShipBase> fleet = new()
+    public sealed class FleetService : IFleetService
+    {
+        public IEnumerable<string> DemoInterfaces()
         {
-            new Destroyer("USS Farragut", 3),
-            new Carrier("USS Nimitz", 5),
-            new Submarine("USS Seawolf", 3)
-        };
+            var log = new List<string>();
 
-        foreach (var ship in fleet)
-        {
-            // Call shared interface method (IFireWeapon) polymorphically
-            if (ship is IFireWeapon shooter)
-                log.Add($"{ship}: {shooter.Fire()}");
+            // Polymorphic collection of the abstract base type
+            List<ShipBase> fleet = new()
+            {
+                new Destroyer("USS Farragut", 3),
+                new Carrier("USS Nimitz", 5),
+                new Submarine("USS Seawolf", 3)
+            };
 
-            // Demonstrate the �special ability� on the one class that has it
-            if (ship is ISilentRunner ghost)
-                log.Add($"{ship}: {ghost.RunSilent()}");
+            foreach (var ship in fleet)
+            {
+                // Call shared interface method (IFireWeapon) polymorphically
+                if (ship is IFireWeapon shooter)
+                    log.Add($"{ship}: {shooter.Fire()}");
+
+                // Demonstrate the special ability on the one class that has it
+                if (ship is ISilentRunner ghost)
+                    log.Add($"{ship}: {ghost.RunSilent()}");
+            }
+
+            return log;
         }
-
-        return log;
     }
 }
