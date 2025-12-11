@@ -123,48 +123,54 @@
 @code
 {
     private ShipOrientation _currentOrientation = ShipOrientation.Horizontal;
-
-    private Ship? _currentShip;
-
-    private string StatusMessage { get; set; }
-        = "Welcome to Battleship! Click New Game to begin.";
+    private string StatusMessage { get; set; } =
+        "Welcome to Battleship! Click NEW GAME to begin.";
 
     protected override void OnInitialized()
     {
-        // Listen for game events so UI updates when state changes
         Game.GameStateChanged += OnGameStateChanged;
         Game.MessageReceived += OnMessageReceived;
     }
 
     private void OnGameStateChanged(object? sender, EventArgs e)
     {
+        // Just re-render on any game state update
         InvokeAsync(StateHasChanged);
     }
 
     private void OnMessageReceived(object? sender, string message)
     {
+        // Let the service push messages too (attacks, game over, etc.)
         StatusMessage = message;
         InvokeAsync(StateHasChanged);
     }
 
+    // ----------------- Controls -----------------
+
     private void OnNewGameClicked()
     {
-        // Reset local UI state
         _currentOrientation = ShipOrientation.Horizontal;
-        _currentShip = null;
 
-        // Reset core game state
         Game.StartNewGame();
 
-        StatusMessage = "Place your ships on the board.";
+        StatusMessage = "New game started. Place your ships on the board.";
     }
+
+    private void ToggleOrientation()
+    {
+        _currentOrientation = _currentOrientation == ShipOrientation.Horizontal
+            ? ShipOrientation.Vertical
+            : ShipOrientation.Horizontal;
+    }
+
+    // ----------------- Player board clicks (placing ships) -----------------
 
     private void OnPlayerCellClick(int row, int col)
     {
         // Only allow placement during the placing phase
         if (Game.CurrentPhase != GamePhase.PlacingShips)
         {
-            StatusMessage = "You can only place ships while in Placing Ships.";
+            StatusMessage = $"[DEBUG] Ignored click at {CoordLabel(row, col)} — phase is {Game.CurrentPhase}.";
             return;
         }
 
@@ -175,42 +181,61 @@
             return;
         }
 
-        // Adjust the starting position so the ship ALWAYS fits on the board.
-        var startRow = row;
-        var startCol = col;
+        // Slide the starting coord so the ship ALWAYS fits on the board.
+        int startRow = row;
+        int startCol = col;
 
         if (_currentOrientation == ShipOrientation.Horizontal)
         {
-            // Slide left if we're too close to the right edge
             if (startCol > GameBoard.BoardSize - ship.Size)
-            {
                 startCol = GameBoard.BoardSize - ship.Size;
-            }
         }
         else // Vertical
         {
-            // Slide up if we're too close to the bottom edge
             if (startRow > GameBoard.BoardSize - ship.Size)
-            {
                 startRow = GameBoard.BoardSize - ship.Size;
-            }
         }
 
-        var placed = Game.PlacePlayerShip(ship, startRow, startCol, _currentOrientation);
+        // First, test directly against the board, so we can log a proper debug message.
+        bool canPlace = Game.PlayerBoard.CanPlaceShip(
+            ship,
+            startRow,
+            startCol,
+            _currentOrientation);
 
-        if (!placed)
+        if (!canPlace)
         {
-            StatusMessage = "Invalid placement. Ships cannot overlap or go off the board.";
+            StatusMessage =
+                $"[DEBUG] Cannot place {ship.Name} (size {ship.Size}) at {CoordLabel(startRow, startCol)} " +
+                $"({ _currentOrientation }). Likely overlapping another ship.";
             return;
         }
 
-        // GameService raises GameStateChanged/MessageReceived,
-        // so the UI + status text will update automatically.
+        // Now actually place via GameService so it can update phase/messages.
+        bool placed = Game.PlacePlayerShip(
+            ship,
+            startRow,
+            startCol,
+            _currentOrientation);
+
+        if (!placed)
+        {
+            StatusMessage =
+                $"[DEBUG] Game.PlacePlayerShip returned false for {ship.Name} at {CoordLabel(startRow, startCol)} " +
+                $"({ _currentOrientation }). Phase={Game.CurrentPhase}.";
+            return;
+        }
+
+        // If we get here, the ship WAS placed.
+        StatusMessage =
+            $"Placed {ship.Name} (size {ship.Size}) starting at {CoordLabel(startRow, startCol)} " +
+            $"({ _currentOrientation }). Player ships on board: {Game.PlayerBoard.TotalShipCount}.";
     }
+
+    // ----------------- Enemy board clicks (attacking) -----------------
 
     private void OnEnemyCellClick(int row, int col)
     {
-        // Only allow firing when it's the player's turn
         if (Game.CurrentPhase != GamePhase.PlayerTurn)
         {
             StatusMessage = "You can only attack during your turn.";
@@ -224,37 +249,33 @@
             return;
         }
 
+        // Let GameService fire its messages (hit/miss/sunk) via MessageReceived
         if (!Game.IsGameOver)
         {
             Game.ComputerAttack();
         }
     }
 
+    // ----------------- Rendering helpers -----------------
+
     private string GetCellCssClass(Cell cell, bool isPlayerBoard)
     {
         // Base look
         var cls = "board-cell";
 
-        // ALWAYS show ships on the player board if there is a ship in this cell
+        // ALWAYS show your own ships on your board if there is a ship in this cell
         if (isPlayerBoard && cell.HasShip)
         {
             cls += " board-cell-ship";
         }
 
-        // Hits/misses on both boards
+        // Show hits/misses on both boards
         if (cell.State == CellState.Hit)
             cls += " board-cell-hit";
         else if (cell.State == CellState.Miss)
             cls += " board-cell-miss";
 
         return cls;
-    }
-
-    private void ToggleOrientation()
-    {
-        _currentOrientation = _currentOrientation == ShipOrientation.Horizontal
-            ? ShipOrientation.Vertical
-            : ShipOrientation.Horizontal;
     }
 
     private static string GetPhaseLabel(GamePhase phase) => phase switch
@@ -266,4 +287,7 @@
         GamePhase.GameOver     => "Game Over",
         _                      => phase.ToString()
     };
+
+    private static string CoordLabel(int row, int col)
+        => $"{(char)('A' + row)}{col + 1}";
 }
