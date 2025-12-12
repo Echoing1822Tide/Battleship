@@ -15,6 +15,20 @@ namespace MauiBattleship.Models
         public int TotalShipCount => Ships.Count;
         public bool AllShipsSunk => TotalShipCount > 0 && SunkShipCount >= TotalShipCount;
 
+        // ----------------------------------------------------
+        // Backwards-compatible aliases for older UI code
+        // ----------------------------------------------------
+
+        /// <summary>
+        /// Alias for UI code that expects a ShipsSunk property.
+        /// </summary>
+        public int ShipsSunk => SunkShipCount;
+
+        /// <summary>
+        /// Simple accessor so UI code can ask the board for a cell.
+        /// </summary>
+        public Cell GetCell(int row, int col) => Cells[row, col];
+
         public GameBoard()
         {
             Cells = new Cell[BoardSize, BoardSize];
@@ -37,7 +51,7 @@ namespace MauiBattleship.Models
 
             for (int i = 0; i < ship.Size; i++)
             {
-                int r = startRow + (orientation == ShipOrientation.Vertical   ? i : 0);
+                int r = startRow + (orientation == ShipOrientation.Vertical ? i : 0);
                 int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
 
                 if (!InBounds(r, c))
@@ -59,7 +73,7 @@ namespace MauiBattleship.Models
 
             for (int i = 0; i < ship.Size; i++)
             {
-                int r = startRow + (orientation == ShipOrientation.Vertical   ? i : 0);
+                int r = startRow + (orientation == ShipOrientation.Vertical ? i : 0);
                 int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
 
                 var cell = Cells[r, c];

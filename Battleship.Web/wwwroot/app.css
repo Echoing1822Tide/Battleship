@@ -151,7 +151,7 @@ html, body {
 }
 
 .board-surface {
-  position: relative; /* IMPORTANT: needed for ship overlay positioning */
+  position: relative; /* needed for overlay positioning */
   display: inline-block;
 }
 
@@ -171,6 +171,9 @@ html, body {
   cursor: pointer;
   position: relative;
   padding: 0;
+
+  /* IMPORTANT: keep cells below the ship overlay */
+  z-index: 1;
 }
 
 .board-cell:hover {
@@ -197,7 +200,6 @@ html, body {
   background: rgba(140, 190, 255, 0.08);
 }
 
-/* Explosion / marker inside a cell */
 .cell-effect {
   position: absolute;
   inset: 0;
@@ -223,12 +225,14 @@ html, body {
 /* === Ship sprite overlay === */
 .ship-sprite {
   position: absolute;
-  pointer-events: none; /* critical: ships MUST NOT block clicks */
+  pointer-events: none;
   object-fit: contain;
   filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
+
+  /* IMPORTANT: force ships above grid buttons */
+  z-index: 2;
 }
 
-/* Responsive */
 @media (max-width: 980px) {
   .boards {
     grid-template-columns: 1fr;

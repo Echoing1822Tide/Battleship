@@ -1,5 +1,6 @@
 ﻿@page "/"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @inject GameService Game
 
@@ -38,7 +39,7 @@
                     {
                         for (var c = 0; c < BoardSize; c++)
                         {
-                            var cell = Game.PlayerBoard.Cells[r, c];
+                            var cell = Game.PlayerBoard.GetCell(r, c);
                             <button
                                 class="@GetCellCss(cell, isPlayerBoard: true)"
                                 @onclick="() => OnPlayerCellClicked(r, c)"
@@ -49,8 +50,7 @@
                     }
                 </div>
 
-                @* Ship sprite overlay (player board only) *@
-                @foreach (var ship in Game.PlayerBoard.Ships.Where(s => s.Positions.Count > 0))
+                @foreach (var ship in Game.GetPlayerFleet().Where(s => s.Positions.Count > 0))
                 {
                     <img class="ship-sprite"
                          src="@GetShipSpritePath(ship)"
@@ -59,7 +59,7 @@
             </div>
 
             <div class="board-footer">
-                Ships sunk: @Game.PlayerBoard.SunkShipCount / 5
+                Ships sunk: @Game.PlayerBoard.ShipsSunk / 5
             </div>
         </div>
 
@@ -73,7 +73,7 @@
                     {
                         for (var c = 0; c < BoardSize; c++)
                         {
-                            var cell = Game.ComputerBoard.Cells[r, c];
+                            var cell = Game.ComputerBoard.GetCell(r, c);
 
                             <button
                                 class="@GetCellCss(cell, isPlayerBoard: false)"
@@ -87,7 +87,7 @@
             </div>
 
             <div class="board-footer">
-                Ships sunk: @Game.ComputerBoard.SunkShipCount / 5
+                Ships sunk: @Game.ComputerBoard.ShipsSunk / 5
             </div>
         </div>
     </div>
@@ -120,7 +120,7 @@
 
     private void OnGameStateChanged(object? sender, EventArgs e)
     {
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
 
         if (IsPlacing)
         {
@@ -139,9 +139,9 @@
         }
         else if (Game.CurrentPhase == GamePhase.GameOver)
         {
-            StatusMessage = Game.PlayerBoard.AllShipsSunk
-                ? "Computer wins! Click NEW GAME to try again."
-                : "You win! Click NEW GAME to play again.";
+            StatusMessage = Game.Winner == PlayerType.Human
+                ? "You win! Click NEW GAME to play again."
+                : "Computer wins! Click NEW GAME to try again.";
         }
     }
 
@@ -177,9 +177,10 @@
             return;
         }
 
-        var ok = Game.PlacePlayerShip(ship, row, col, IsVertical ? ShipOrientation.Vertical : ShipOrientation.Horizontal);
+        var ok = Game.PlacePlayerShip(ship, row, col, IsVertical);
         if (!ok)
         {
+            // This message is correct: you're trying to start a long ship too close to an edge or on an occupied area.
             StatusMessage = "Invalid placement. Ships cannot overlap or go off the board.";
             return;
         }
@@ -200,15 +201,24 @@
 
         var result = Game.PlayerAttack(row, col);
 
-        if (result == null)
+        if (result is null)
         {
             StatusMessage = "You already fired there. Pick a different cell.";
             return;
         }
 
-        StatusMessage = result != null && (result == AttackResult.Hit || result == AttackResult.Sunk)
-            ? $"HIT at {CoordLabel(row, col)}!"
-            : $"Miss at {CoordLabel(row, col)}.";
+        StatusMessage = result switch
+        {
+            AttackResult.Hit => $"HIT at {CoordLabel(row, col)}!",
+            AttackResult.Sunk => $"SUNK at {CoordLabel(row, col)}!",
+            AttackResult.Miss => $"Miss at {CoordLabel(row, col)}.",
+            _ => "Invalid attack."
+        };
+
+        if (Game.CurrentPhase == GamePhase.ComputerTurn && !Game.IsGameOver)
+        {
+            Game.ComputerAttack();
+        }
     }
 
     private static string CoordLabel(int row, int col) => $"{(char)('A' + row)}{col + 1}";
@@ -220,7 +230,6 @@
         if (cell.State == CellState.Hit) classes += " cell-hit";
         if (cell.State == CellState.Miss) classes += " cell-miss";
 
-        // Show occupied styling only on player board (optional)
         if (isPlayerBoard && cell.Ship is not null)
             classes += " cell-has-ship";
 
@@ -229,12 +238,11 @@
 
     private RenderFragment RenderCellFx(Cell cell) => builder =>
     {
-        // Tiny markers. Explosion is optional but fun.
         if (cell.State == CellState.Hit)
         {
             builder.OpenElement(0, "img");
             builder.AddAttribute(1, "class", "cell-effect");
-            builder.AddAttribute(2, "src", "images/effects/Explosion.png");
+            builder.AddAttribute(2, "src", "images/ships/effects/Explosion.png");
             builder.CloseElement();
         }
         else if (cell.State == CellState.Miss)
@@ -247,7 +255,6 @@
 
     private static string GetShipSpritePath(Ship ship)
     {
-        // Map by Size + Name (since there is no ShipType enum in your models)
         return ship.Size switch
         {
             5 => "images/ships/Aircraft_Carrier_5_Pegs.png",
@@ -261,32 +268,30 @@
 
     private static string GetShipSpriteStyle(Ship ship)
     {
-        // Compute top-left from occupied cells
         var minRow = ship.Positions.Min(p => p.Row);
         var minCol = ship.Positions.Min(p => p.Col);
         var maxRow = ship.Positions.Max(p => p.Row);
         var maxCol = ship.Positions.Max(p => p.Col);
 
         var isVertical = maxRow != minRow;
+        var length = ship.Size;
 
-        // Position in pixels, matching the grid math (cell + gap)
+        // grid math
         var left = minCol * (CellPx + GapPx);
         var top = minRow * (CellPx + GapPx);
 
-        // Size in cells
-        var length = ship.Size;
+        // sprite is drawn HORIZONTAL by default
+        var spriteWidth = length * CellPx + (length - 1) * GapPx;
+        var spriteHeight = CellPx;
 
-        var width = isVertical ? CellPx : (length * CellPx + (length - 1) * GapPx);
-        var height = isVertical ? (length * CellPx + (length - 1) * GapPx) : CellPx;
+        if (!isVertical)
+        {
+            return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;";
+        }
 
-        // Rotate the horizontal sprite for vertical placement
-        var rotate = isVertical ? " rotate(90deg)" : "";
-        var origin = isVertical ? " transform-origin: top left;" : "";
-
-        // For rotate(90deg), we need to shift because width/height swap visually.
-        // Easiest: rotate and then translate it back by its own height.
-        var extra = isVertical ? " transform: rotate(90deg) translateY(-100%);" : "";
-
-        return $"left:{left}px; top:{top}px; width:{width}px; height:{height}px;{origin}{extra}";
+        // Vertical: rotate the horizontal sprite in place around top-left, then pull it back into the board.
+        // After rotate(90deg), the width becomes "height", so we translate up by the original width.
+        return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;" +
+               $"transform-origin: top left; transform: rotate(90deg) translateY(-{spriteWidth}px);";
     }
 }

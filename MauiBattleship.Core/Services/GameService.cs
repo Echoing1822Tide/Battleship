@@ -20,6 +20,8 @@ namespace MauiBattleship.Services
         public GamePhase CurrentPhase { get; private set; } = GamePhase.NotStarted;
         public bool IsGameOver { get; private set; }
 
+        public PlayerType Winner { get; private set; } = PlayerType.None;
+
         public event EventHandler? GameStateChanged;
         public event EventHandler<string>? MessageReceived;
 
@@ -34,12 +36,13 @@ namespace MauiBattleship.Services
         public void StartNewGame()
         {
             IsGameOver = false;
+            Winner = PlayerType.None;
             CurrentPhase = GamePhase.PlacingShips;
 
             PlayerBoard = new GameBoard();
             ComputerBoard = new GameBoard();
 
-            _playerFleet   = CreateStandardFleet();
+            _playerFleet = CreateStandardFleet();
             _computerFleet = CreateStandardFleet();
 
             PlaceComputerFleetRandomly();
@@ -51,12 +54,16 @@ namespace MauiBattleship.Services
         public Ship? GetNextShipToPlace()
             => _playerFleet.FirstOrDefault(s => !s.IsPlaced);
 
-        public Ship? GetNextPlayerShipToPlace()
-        {
-            // Assuming PlayerBoard.Ships is a List<Ship> and each Ship has Positions (List<Position>)
-            // and that a ship is "placed" if Positions.Count > 0
-            return PlayerBoard.Ships.FirstOrDefault(s => s.Positions.Count == 0);
-        }
+        // ----------------------------------------------------
+        // Compatibility aliases for older UI code
+        // ----------------------------------------------------
+
+        public IReadOnlyList<Ship> GetPlayerFleet() => PlayerFleet;
+
+        public Ship? GetNextPlayerShipToPlace() => GetNextShipToPlace();
+
+        public bool PlacePlayerShip(Ship ship, int row, int col, bool isVertical)
+            => PlacePlayerShip(ship, row, col, isVertical ? ShipOrientation.Vertical : ShipOrientation.Horizontal);
 
         public bool PlacePlayerShip(Ship ship, int row, int col, ShipOrientation orientation)
         {
@@ -120,6 +127,7 @@ namespace MauiBattleship.Services
             {
                 IsGameOver = true;
                 CurrentPhase = GamePhase.GameOver;
+                Winner = PlayerType.Human;
                 OnMessage("All enemy ships sunk. You win!");
             }
 
@@ -127,10 +135,6 @@ namespace MauiBattleship.Services
             return result;
         }
 
-        /// <summary>
-        /// Simple random AI: only actually fires when the phase is ComputerTurn.
-        /// Home.razor calls this after PlayerAttack as long as the game isn't over.
-        /// </summary>
         public void ComputerAttack()
         {
             if (IsGameOver || CurrentPhase != GamePhase.ComputerTurn)
@@ -139,7 +143,6 @@ namespace MauiBattleship.Services
             AttackResult result;
             int row, col;
 
-            // Keep rolling until we pick a cell that hasn't been tried
             do
             {
                 row = _random.Next(GameBoard.BoardSize);
@@ -169,15 +172,12 @@ namespace MauiBattleship.Services
             {
                 IsGameOver = true;
                 CurrentPhase = GamePhase.GameOver;
+                Winner = PlayerType.Computer;
                 OnMessage("All your ships are sunk. You lose.");
             }
 
             OnGameStateChanged();
         }
-
-        // ----------------------------------------------------
-        // Helpers
-        // ----------------------------------------------------
 
         private static List<Ship> CreateStandardFleet()
         {
