@@ -1,49 +1,28 @@
-namespace MauiBattleship.Models;
+using System;
 
-/// <summary>
-/// Represents a single cell on the game board.
-/// </summary>
-public class Cell
+namespace MauiBattleship.Models
 {
-    /// <summary>
-    /// The row position of this cell (0-9).
-    /// </summary>
-    public int Row { get; }
-
-    /// <summary>
-    /// The column position of this cell (0-9).
-    /// </summary>
-    public int Column { get; }
-
-    /// <summary>
-    /// The current state of this cell.
-    /// </summary>
-    public CellState State { get; set; }
-
-    /// <summary>
-    /// Reference to the ship occupying this cell, if any.
-    /// </summary>
-    public Ship? Ship { get; set; }
-
-    /// <summary>
-    /// Creates a new cell at the specified position.
-    /// </summary>
-    /// <param name="row">The row position (0-9).</param>
-    /// <param name="column">The column position (0-9).</param>
-    public Cell(int row, int column)
+    public sealed class Cell
     {
-        Row = row;
-        Column = column;
-        State = CellState.Empty;
+        public int Row { get; }
+        public int Col { get; }
+
+        public CellState State { get; set; } = CellState.Empty;
+
+        /// <summary>
+        /// Ship occupying this cell (null if none).
+        /// </summary>
+        public Ship? Ship { get; set; }
+
+        /// <summary>
+        /// Convenience flag used by the UI and placement logic.
+        /// </summary>
+        public bool HasShip => Ship is not null;
+
+        public Cell(int row, int col)
+        {
+            Row = row;
+            Col = col;
+        }
     }
-
-    /// <summary>
-    /// Indicates whether this cell has been attacked.
-    /// </summary>
-    public bool IsAttacked => State == CellState.Hit || State == CellState.Miss;
-
-    /// <summary>
-    /// Indicates whether this cell contains a ship.
-    /// </summary>
-    public bool HasShip => Ship != null;
 }

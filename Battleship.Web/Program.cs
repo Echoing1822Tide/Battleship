@@ -1,15 +1,12 @@
+using Battleship.Web.Components;
 using MauiBattleship.Services;
-using Battleship.Web.Components;          // your App component
-using MauiBattleship.Core.Services;       // IFleetService, FleetService
-
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// ---- Battleship game services ----
-builder.Services.AddSingleton<IFleetService, FleetService>();
+// Register the game service used by Home.razor
 builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();

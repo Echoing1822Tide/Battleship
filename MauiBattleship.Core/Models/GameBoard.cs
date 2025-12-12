@@ -4,104 +4,67 @@ using System.Linq;
 
 namespace MauiBattleship.Models
 {
-    /// <summary>
-    /// Represents a 10x10 game board for Battleship.
-    /// </summary>
-    public class GameBoard
+    public sealed class GameBoard
     {
-        /// <summary>
-        /// The size of the game board (10x10).
-        /// </summary>
         public const int BoardSize = 10;
 
-        /// <summary>
-        /// The 2D array of cells making up the board.
-        /// </summary>
         public Cell[,] Cells { get; }
+        public List<Ship> Ships { get; } = new();
 
-        /// <summary>
-        /// The list of ships on this board.
-        /// </summary>
-        public List<Ship> Ships { get; }
+        public int SunkShipCount { get; private set; }
+        public int TotalShipCount => Ships.Count;
+        public bool AllShipsSunk => TotalShipCount > 0 && SunkShipCount >= TotalShipCount;
 
-        /// <summary>
-        /// Creates a new empty game board.
-        /// </summary>
         public GameBoard()
         {
             Cells = new Cell[BoardSize, BoardSize];
-            Ships = new List<Ship>();
-            InitializeBoard();
-        }
 
-        /// <summary>
-        /// Initializes all cells on the board.
-        /// </summary>
-        private void InitializeBoard()
-        {
-            for (int row = 0; row < BoardSize; row++)
+            for (int r = 0; r < BoardSize; r++)
             {
-                for (int col = 0; col < BoardSize; col++)
+                for (int c = 0; c < BoardSize; c++)
                 {
-                    Cells[row, col] = new Cell(row, col);
+                    Cells[r, c] = new Cell(r, c);
                 }
             }
         }
 
-        /// <summary>
-        /// Checks if a ship can be placed at the specified position.
-        /// </summary>
-        public bool CanPlaceShip(Ship ship, int startRow, int startColumn, ShipOrientation orientation)
+        private static bool InBounds(int row, int col)
+            => row >= 0 && row < BoardSize && col >= 0 && col < BoardSize;
+
+        public bool CanPlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
         {
-            // Check bounds
-            if (startRow < 0 || startColumn < 0)
-                return false;
+            if (ship is null) throw new ArgumentNullException(nameof(ship));
 
-            int endRow = orientation == ShipOrientation.Vertical
-                ? startRow + ship.Size - 1
-                : startRow;
-
-            int endColumn = orientation == ShipOrientation.Horizontal
-                ? startColumn + ship.Size - 1
-                : startColumn;
-
-            if (endRow >= BoardSize || endColumn >= BoardSize)
-                return false;
-
-            // Check for overlapping ships
             for (int i = 0; i < ship.Size; i++)
             {
-                int row = orientation == ShipOrientation.Vertical ? startRow + i : startRow;
-                int col = orientation == ShipOrientation.Horizontal ? startColumn + i : startColumn;
+                int r = startRow + (orientation == ShipOrientation.Vertical   ? i : 0);
+                int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
 
-                if (Cells[row, col].HasShip)
+                if (!InBounds(r, c))
+                    return false;
+
+                if (Cells[r, c].HasShip)
                     return false;
             }
 
             return true;
         }
 
-        /// <summary>
-        /// Places a ship on the board at the specified position.
-        /// </summary>
-        public bool PlaceShip(Ship ship, int startRow, int startColumn, ShipOrientation orientation)
+        public bool PlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
         {
-            if (!CanPlaceShip(ship, startRow, startColumn, orientation))
+            if (!CanPlaceShip(ship, startRow, startCol, orientation))
                 return false;
 
-            ship.StartRow = startRow;
-            ship.StartColumn = startColumn;
-            ship.Orientation = orientation;
-            ship.IsPlaced = true;
+            var positions = new List<(int Row, int Col)>();
 
-            // Mark cells as occupied
             for (int i = 0; i < ship.Size; i++)
             {
-                int row = orientation == ShipOrientation.Vertical ? startRow + i : startRow;
-                int col = orientation == ShipOrientation.Horizontal ? startColumn + i : startColumn;
+                int r = startRow + (orientation == ShipOrientation.Vertical   ? i : 0);
+                int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
 
-                Cells[row, col].Ship = ship;
-                Cells[row, col].State = CellState.Ship;
+                var cell = Cells[r, c];
+                cell.Ship = ship;
+                positions.Add((r, c));
             }
 
             if (!Ships.Contains(ship))
@@ -109,120 +72,55 @@ namespace MauiBattleship.Models
                 Ships.Add(ship);
             }
 
+            ship.SetPositions(positions);
+
             return true;
         }
 
-        /// <summary>
-        /// Processes an attack at the specified position.
-        /// </summary>
-        public AttackResult Attack(int row, int column)
+        public AttackResult FireAt(int row, int col)
         {
-            if (row < 0 || row >= BoardSize ||
-                column < 0 || column >= BoardSize)
-            {
-                throw new ArgumentOutOfRangeException("Attack position is out of bounds.");
-            }
+            if (!InBounds(row, col))
+                return AttackResult.Invalid;
 
-            var cell = Cells[row, column];
+            var cell = Cells[row, col];
 
-            // Already attacked this cell
-            if (cell.IsAttacked)
-            {
-                return new AttackResult(row, column, false, alreadyAttacked: true);
-            }
+            if (cell.State == CellState.Hit || cell.State == CellState.Miss)
+                return AttackResult.AlreadyTried;
 
-            if (cell.HasShip)
-            {
-                cell.State = CellState.Hit;
-                cell.Ship!.Hit();
-
-                bool isSunk = cell.Ship.IsSunk;
-                return new AttackResult(
-                    row,
-                    column,
-                    isHit: true,
-                    isSunk: isSunk,
-                    sunkShipName: isSunk ? cell.Ship.Name : null);
-            }
-            else
+            if (!cell.HasShip)
             {
                 cell.State = CellState.Miss;
-                return new AttackResult(row, column, isHit: false);
+                return AttackResult.Miss;
             }
-        }
 
-        /// <summary>
-        /// Gets a cell at the specified position.
-        /// </summary>
-        public Cell GetCell(int row, int column)
-        {
-            if (row < 0 || row >= BoardSize ||
-                column < 0 || column >= BoardSize)
+            cell.State = CellState.Hit;
+
+            var ship = cell.Ship!;
+            ship.RegisterHit();
+
+            if (ship.IsSunk)
             {
-                throw new ArgumentOutOfRangeException("Position is out of bounds.");
+                SunkShipCount++;
+                return AttackResult.Sunk;
             }
 
-            return Cells[row, column];
+            return AttackResult.Hit;
         }
 
-        /// <summary>
-        /// Checks if all ships on the board have been sunk.
-        /// </summary>
-        public bool AllShipsSunk()
-        {
-            return Ships.Count > 0 && Ships.All(s => s.IsSunk);
-        }
-
-        /// <summary>
-        /// Gets the count of ships that have been sunk.
-        /// </summary>
-        public int SunkShipCount => Ships.Count(s => s.IsSunk);
-
-        /// <summary>
-        /// Gets the total number of ships.
-        /// </summary>
-        public int TotalShipCount => Ships.Count;
-
-        /// <summary>
-        /// Resets the board to its initial state.
-        /// </summary>
         public void Reset()
         {
-            for (int row = 0; row < BoardSize; row++)
-            {
-                for (int col = 0; col < BoardSize; col++)
-                {
-                    Cells[row, col] = new Cell(row, col);
-                }
-            }
-
-            foreach (var ship in Ships)
-            {
-                ship.Reset();
-            }
-
             Ships.Clear();
-        }
+            SunkShipCount = 0;
 
-        /// <summary>
-        /// Gets all cells that haven't been attacked yet.
-        /// </summary>
-        public List<Cell> GetUnattackedCells()
-        {
-            var cells = new List<Cell>();
-
-            for (int row = 0; row < BoardSize; row++)
+            for (int r = 0; r < BoardSize; r++)
             {
-                for (int col = 0; col < BoardSize; col++)
+                for (int c = 0; c < BoardSize; c++)
                 {
-                    if (!Cells[row, col].IsAttacked)
-                    {
-                        cells.Add(Cells[row, col]);
-                    }
+                    var cell = Cells[r, c];
+                    cell.Ship = null;
+                    cell.State = CellState.Empty;
                 }
             }
-
-            return cells;
         }
     }
 }

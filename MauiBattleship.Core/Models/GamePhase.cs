@@ -1,18 +1,11 @@
-namespace MauiBattleship.Models;
-
-/// <summary>
-/// Represents the current phase of the game.
-/// </summary>
-public enum GamePhase
+namespace MauiBattleship.Models
 {
-    /// <summary>Game hasn't started yet.</summary>
-    NotStarted,
-    /// <summary>Player is placing ships.</summary>
-    PlacingShips,
-    /// <summary>Player's turn to attack.</summary>
-    PlayerTurn,
-    /// <summary>Computer's turn to attack.</summary>
-    ComputerTurn,
-    /// <summary>Game is over.</summary>
-    GameOver
+    public enum GamePhase
+    {
+        NotStarted = 0,
+        PlacingShips = 1,
+        PlayerTurn = 2,
+        ComputerTurn = 3,
+        GameOver = 4
+    }
 }

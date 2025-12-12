@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MauiBattleship", "MauiBattleship\MauiBattleship.csproj", "{8A7C6B34-2E5F-4F8A-B9D6-3C8E7A1F2B4D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MauiBattleship.Tests", "MauiBattleship.Tests\MauiBattleship.Tests.csproj", "{1B2C3D4E-5F6A-7B8C-9D0E-1F2A3B4C5D6E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MauiBattleship.Core", "MauiBattleship.Core\MauiBattleship.Core.csproj", "{2C3D4E5F-6A7B-8C9D-0E1F-2A3B4C5D6E7F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Battleship.Web", "Battleship.Web\Battleship.Web.csproj", "{924155C2-CBB0-4BE0-A579-BFA5A8D5F9F7}"
