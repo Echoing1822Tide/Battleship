@@ -42,8 +42,10 @@ namespace MauiBattleship.Models
             }
         }
 
-        private static bool InBounds(int row, int col)
-            => row >= 0 && row < BoardSize && col >= 0 && col < BoardSize;
+
+
+        public bool InBounds(int row, int col) =>
+            row >= 0 && row < BoardSize && col >= 0 && col < BoardSize;
 
         public bool CanPlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
         {

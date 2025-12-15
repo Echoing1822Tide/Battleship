@@ -3,9 +3,9 @@ namespace MauiBattleship.Models
     public enum AttackResult
     {
         Invalid = 0,
-        AlreadyTried = 1,
-        Miss = 2,
-        Hit = 3,
-        Sunk = 4
+        Miss = 1,
+        Hit = 2,
+        Sunk = 3,
+        AlreadyTried = 4
     }
 }

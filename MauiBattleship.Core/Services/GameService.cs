@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MauiBattleship.Models;
+using MauiBattleship.Core.Services;
 
-namespace MauiBattleship.Services
+namespace MauiBattleship.Core.Services
 {
     public sealed class GameService
     {
@@ -70,7 +71,15 @@ namespace MauiBattleship.Services
             if (CurrentPhase != GamePhase.PlacingShips)
                 return false;
 
-            var placed = PlayerBoard.PlaceShip(ship, row, col, orientation);
+            // BUG FIX: Ensure the ship is from the current fleet (not a stale reference)
+            var fleetShip = _playerFleet.FirstOrDefault(s => s.Name == ship.Name && s.Size == ship.Size && !s.IsPlaced);
+            if (fleetShip == null || !ReferenceEquals(ship, fleetShip))
+            {
+                OnMessage("Invalid ship selection. Please use the ship from the current fleet.");
+                return false;
+            }
+
+            var placed = PlayerBoard.PlaceShip(fleetShip, row, col, orientation);
             if (!placed)
                 return false;
 
@@ -83,7 +92,7 @@ namespace MauiBattleship.Services
             }
             else
             {
-                OnMessage($"Placed {ship.Name} (size {ship.Size}). Next ship: {next.Name} (size {next.Size}).");
+                OnMessage($"Placed {fleetShip.Name} (size {fleetShip.Size}). Next ship: {next.Name} (size {next.Size}).");
             }
 
             OnGameStateChanged();
@@ -177,6 +186,11 @@ namespace MauiBattleship.Services
             }
 
             OnGameStateChanged();
+        }
+
+        public void SetPhase(GamePhase phase)
+        {
+            CurrentPhase = phase;
         }
 
         private static List<Ship> CreateStandardFleet()

@@ -2,6 +2,9 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
+@using MauiBattleship.Models
+@using MauiBattleship.Core.Services
+
 @inject GameService Game
 
 <div class="page-shell">
@@ -180,7 +183,6 @@
         var ok = Game.PlacePlayerShip(ship, row, col, IsVertical);
         if (!ok)
         {
-            // This message is correct: you're trying to start a long ship too close to an edge or on an occupied area.
             StatusMessage = "Invalid placement. Ships cannot overlap or go off the board.";
             return;
         }
@@ -289,8 +291,6 @@
             return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;";
         }
 
-        // Vertical: rotate the horizontal sprite in place around top-left, then pull it back into the board.
-        // After rotate(90deg), the width becomes "height", so we translate up by the original width.
         return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;" +
                $"transform-origin: top left; transform: rotate(90deg) translateY(-{spriteWidth}px);";
     }

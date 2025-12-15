@@ -1,5 +1,5 @@
 using Battleship.Web.Components;
-using MauiBattleship.Services;
+using MauiBattleship.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
