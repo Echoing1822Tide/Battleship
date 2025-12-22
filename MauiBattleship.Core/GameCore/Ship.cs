@@ -1,47 +1,30 @@
-using System.Collections.Generic;
-using System.Linq;
+namespace MauiBattleship.Models;
 
-namespace MauiBattleship.Models
+public class Ship
 {
-    public sealed class Ship
+    public string Name { get; set; } = "Ship";
+    public int Size { get; set; }
+
+    // Placed cells
+    public List<ShipPosition> Positions { get; } = new();
+
+    // Hits tracked by coordinate
+    private readonly HashSet<ShipPosition> _hits = new();
+
+    public bool IsSunk => Positions.Count > 0 && _hits.Count >= Positions.Count;
+
+    public Ship() { }
+
+    public Ship(string name, int size)
     {
-        public string Name { get; }
-        public int Size { get; }
+        Name = name;
+        Size = size;
+    }
 
-        /// <summary>
-        /// List of board coordinates occupied by this ship.
-        /// </summary>
-        public List<(int Row, int Col)> Positions { get; } = new();
-
-        public int Hits { get; private set; }
-
-        public bool IsPlaced => Positions.Count == Size;
-        public bool IsSunk   => Hits >= Size;
-
-        public Ship(string name, int size)
-        {
-            Name = name;
-            Size = size;
-        }
-
-        internal void SetPositions(IEnumerable<(int Row, int Col)> positions)
-        {
-            Positions.Clear();
-            Positions.AddRange(positions);
-        }
-
-        internal void ClearPositions()
-        {
-            Positions.Clear();
-            Hits = 0;
-        }
-
-        public void RegisterHit()
-        {
-            if (!IsSunk)
-            {
-                Hits++;
-            }
-        }
+    public void RegisterHit(int row, int col)
+    {
+        _hits.Add(new ShipPosition(row, col));
     }
 }
+
+public readonly record struct ShipPosition(int Row, int Col);

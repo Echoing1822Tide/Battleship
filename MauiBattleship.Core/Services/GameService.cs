@@ -1,234 +1,118 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using MauiBattleship.Models;
-using MauiBattleship.Core.Services;
+using MauiBattleship.Services;
 
-namespace MauiBattleship.Core.Services
+namespace MauiBattleship.Services;
+
+public class GameService
 {
-    public sealed class GameService
+    private readonly FleetService _fleetService = new();
+    private readonly Random _rnd = new();
+
+    private List<Ship> _playerFleet = new();
+    private List<Ship> _enemyFleet = new();
+
+    public GameBoard PlayerBoard { get; private set; } = new(10);
+    public GameBoard EnemyBoard { get; private set; } = new(10);
+
+    public GamePhase CurrentPhase { get; private set; } = GamePhase.PlacingShips;
+
+    public void StartNewGame()
     {
-        private readonly Random _random = new();
+        PlayerBoard = new GameBoard(10);
+        EnemyBoard = new GameBoard(10);
 
-        private List<Ship> _playerFleet = new();
-        private List<Ship> _computerFleet = new();
+        _playerFleet = _fleetService.CreateStandardFleet();
+        _enemyFleet = _fleetService.CreateStandardFleet();
 
-        public GameBoard PlayerBoard { get; private set; } = new();
-        public GameBoard ComputerBoard { get; private set; } = new();
+        PlayerBoard.SetFleet(_playerFleet);
+        EnemyBoard.SetFleet(_enemyFleet);
 
-        public IReadOnlyList<Ship> PlayerFleet => _playerFleet;
-        public IReadOnlyList<Ship> ComputerFleet => _computerFleet;
-        public GamePhase CurrentPhase { get; private set; } = GamePhase.NotStarted;
-        public bool IsGameOver { get; private set; }
+        // Simple enemy auto-placement so the game can proceed
+        AutoPlaceFleetRandomly(EnemyBoard, _enemyFleet);
 
-        public PlayerType Winner { get; private set; } = PlayerType.None;
+        CurrentPhase = GamePhase.PlacingShips;
+    }
 
-        public event EventHandler? GameStateChanged;
-        public event EventHandler<string>? MessageReceived;
+    public List<Ship> GetPlayerFleet() => _playerFleet;
 
-        public GameService()
+    public Ship? GetNextPlayerShipToPlace()
+        => _playerFleet.FirstOrDefault(s => s.Positions.Count == 0);
+
+    public bool PlacePlayerShip(Ship ship, int row, int col, bool isVertical)
+    {
+        if (CurrentPhase != GamePhase.PlacingShips)
+            return false;
+
+        // IMPORTANT: use the instance from _playerFleet (not a stale reference)
+        var fleetShip = _playerFleet.FirstOrDefault(s => s.Name == ship.Name && s.Size == ship.Size && s.Positions.Count == 0);
+        if (fleetShip is null)
+            return false;
+
+        var ok = PlayerBoard.TryPlaceShip(fleetShip, row, col, isVertical);
+        if (!ok) return false;
+
+        // If all placed, move to player turn
+        if (_playerFleet.All(s => s.Positions.Count > 0))
+            CurrentPhase = GamePhase.PlayerTurn;
+
+        return true;
+    }
+
+    public string PlayerAttacksEnemy(int row, int col)
+    {
+        if (CurrentPhase != GamePhase.PlayerTurn)
+            return "Not your turn.";
+
+        var result = EnemyBoard.Attack(row, col);
+
+        if (EnemyBoard.AllShipsSunk)
         {
+            CurrentPhase = GamePhase.GameOver;
+            return "You win! Enemy fleet destroyed.";
         }
 
-        // ----------------------------------------------------
-        // Public API used by Home.razor
-        // ----------------------------------------------------
+        // Enemy attacks back
+        var enemyResult = EnemyTurn();
+        return $"{result} | Enemy: {enemyResult}";
+    }
 
-        public void StartNewGame()
+    private string EnemyTurn()
+    {
+        int row, col;
+        do
         {
-            IsGameOver = false;
-            Winner = PlayerType.None;
-            CurrentPhase = GamePhase.PlacingShips;
+            row = _rnd.Next(0, PlayerBoard.Size);
+            col = _rnd.Next(0, PlayerBoard.Size);
+        } while (PlayerBoard.IsAlreadyAttacked(row, col));
 
-            PlayerBoard = new GameBoard();
-            ComputerBoard = new GameBoard();
+        var result = PlayerBoard.Attack(row, col);
 
-            _playerFleet = CreateStandardFleet();
-            _computerFleet = CreateStandardFleet();
-
-            PlaceComputerFleetRandomly();
-
-            OnMessage("New game started. Place your ships on the board.");
-            OnGameStateChanged();
+        if (PlayerBoard.AllShipsSunk)
+        {
+            CurrentPhase = GamePhase.GameOver;
+            return "Enemy wins! Your fleet is destroyed.";
         }
 
-        public Ship? GetNextShipToPlace()
-            => _playerFleet.FirstOrDefault(s => !s.IsPlaced);
+        return result;
+    }
 
-        // ----------------------------------------------------
-        // Compatibility aliases for older UI code
-        // ----------------------------------------------------
-
-        public IReadOnlyList<Ship> GetPlayerFleet() => PlayerFleet;
-
-        public Ship? GetNextPlayerShipToPlace() => GetNextShipToPlace();
-
-        public bool PlacePlayerShip(Ship ship, int row, int col, bool isVertical)
-            => PlacePlayerShip(ship, row, col, isVertical ? ShipOrientation.Vertical : ShipOrientation.Horizontal);
-
-        public bool PlacePlayerShip(Ship ship, int row, int col, ShipOrientation orientation)
+    private void AutoPlaceFleetRandomly(GameBoard board, List<Ship> fleet)
+    {
+        foreach (var ship in fleet)
         {
-            if (CurrentPhase != GamePhase.PlacingShips)
-                return false;
+            var placed = false;
 
-            // BUG FIX: Ensure the ship is from the current fleet (not a stale reference)
-            var fleetShip = _playerFleet.FirstOrDefault(s => s.Name == ship.Name && s.Size == ship.Size && !s.IsPlaced);
-            if (fleetShip == null || !ReferenceEquals(ship, fleetShip))
+            for (var attempts = 0; attempts < 500 && !placed; attempts++)
             {
-                OnMessage("Invalid ship selection. Please use the ship from the current fleet.");
-                return false;
+                var vertical = _rnd.Next(0, 2) == 0;
+                var row = _rnd.Next(0, board.Size);
+                var col = _rnd.Next(0, board.Size);
+
+                placed = board.TryPlaceShip(ship, row, col, vertical);
             }
 
-            var placed = PlayerBoard.PlaceShip(fleetShip, row, col, orientation);
             if (!placed)
-                return false;
-
-            var next = GetNextShipToPlace();
-
-            if (next is null)
-            {
-                CurrentPhase = GamePhase.PlayerTurn;
-                OnMessage("All ships placed. Your turn to attack.");
-            }
-            else
-            {
-                OnMessage($"Placed {fleetShip.Name} (size {fleetShip.Size}). Next ship: {next.Name} (size {next.Size}).");
-            }
-
-            OnGameStateChanged();
-            return true;
+                throw new InvalidOperationException($"Failed to auto-place {ship.Name}.");
         }
-
-        /// <summary>
-        /// Called when the user clicks an enemy cell.
-        /// Returns null if they already fired there.
-        /// </summary>
-        public AttackResult? PlayerAttack(int row, int col)
-        {
-            if (IsGameOver || CurrentPhase != GamePhase.PlayerTurn)
-                return AttackResult.Invalid;
-
-            var result = ComputerBoard.FireAt(row, col);
-
-            if (result == AttackResult.AlreadyTried)
-            {
-                OnMessage("You already fired at that cell.");
-                return null;
-            }
-
-            switch (result)
-            {
-                case AttackResult.Miss:
-                    OnMessage("Miss! Enemy's turn.");
-                    CurrentPhase = GamePhase.ComputerTurn;
-                    break;
-
-                case AttackResult.Hit:
-                    OnMessage("Hit!");
-                    break;
-
-                case AttackResult.Sunk:
-                    OnMessage("You sunk an enemy ship!");
-                    break;
-            }
-
-            if (ComputerBoard.AllShipsSunk)
-            {
-                IsGameOver = true;
-                CurrentPhase = GamePhase.GameOver;
-                Winner = PlayerType.Human;
-                OnMessage("All enemy ships sunk. You win!");
-            }
-
-            OnGameStateChanged();
-            return result;
-        }
-
-        public void ComputerAttack()
-        {
-            if (IsGameOver || CurrentPhase != GamePhase.ComputerTurn)
-                return;
-
-            AttackResult result;
-            int row, col;
-
-            do
-            {
-                row = _random.Next(GameBoard.BoardSize);
-                col = _random.Next(GameBoard.BoardSize);
-
-                result = PlayerBoard.FireAt(row, col);
-            }
-            while (result == AttackResult.AlreadyTried);
-
-            switch (result)
-            {
-                case AttackResult.Miss:
-                    OnMessage("Enemy missed! Your turn.");
-                    CurrentPhase = GamePhase.PlayerTurn;
-                    break;
-
-                case AttackResult.Hit:
-                    OnMessage("Enemy hit one of your ships!");
-                    break;
-
-                case AttackResult.Sunk:
-                    OnMessage("Enemy sunk one of your ships!");
-                    break;
-            }
-
-            if (PlayerBoard.AllShipsSunk)
-            {
-                IsGameOver = true;
-                CurrentPhase = GamePhase.GameOver;
-                Winner = PlayerType.Computer;
-                OnMessage("All your ships are sunk. You lose.");
-            }
-
-            OnGameStateChanged();
-        }
-
-        public void SetPhase(GamePhase phase)
-        {
-            CurrentPhase = phase;
-        }
-
-        private static List<Ship> CreateStandardFleet()
-        {
-            return new List<Ship>
-            {
-                new Ship("Carrier",     5),
-                new Ship("Battleship",  4),
-                new Ship("Cruiser",     3),
-                new Ship("Submarine",   3),
-                new Ship("Destroyer",   2)
-            };
-        }
-
-        private void PlaceComputerFleetRandomly()
-        {
-            foreach (var ship in _computerFleet)
-            {
-                bool placed = false;
-
-                while (!placed)
-                {
-                    int row = _random.Next(GameBoard.BoardSize);
-                    int col = _random.Next(GameBoard.BoardSize);
-
-                    var orientation = _random.Next(2) == 0
-                        ? ShipOrientation.Horizontal
-                        : ShipOrientation.Vertical;
-
-                    placed = ComputerBoard.PlaceShip(ship, row, col, orientation);
-                }
-            }
-        }
-
-        private void OnGameStateChanged()
-            => GameStateChanged?.Invoke(this, EventArgs.Empty);
-
-        private void OnMessage(string message)
-            => MessageReceived?.Invoke(this, message);
     }
 }

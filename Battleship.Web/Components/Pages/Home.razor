@@ -1,10 +1,6 @@
 ﻿@page "/"
-@rendermode InteractiveServer
-@implements IDisposable
-
+@using MauiBattleship.Services
 @using MauiBattleship.Models
-@using MauiBattleship.Core.Services
-
 @inject GameService Game
 
 <div class="page-shell">
@@ -15,23 +11,24 @@
 
     <div class="top-row">
         <div class="controls">
-            <div class="phase">Phase: <span class="phase-badge">@Game.CurrentPhase</span></div>
+            <div class="phase">
+                Phase:
+                <span class="phase-badge">@Game.CurrentPhase</span>
+            </div>
 
-            <button class="btn btn-primary" @onclick="OnNewGameClicked">NEW GAME</button>
-            <button class="btn btn-secondary" @onclick="ToggleOrientation" disabled="@(!IsPlacing)">
+            <button class="btn btn-primary" @onclick="NewGame">NEW GAME</button>
+            <button class="btn btn-secondary" @onclick="ToggleOrientation">
                 ROTATE SHIP (@(IsVertical ? "VERTICAL" : "HORIZONTAL"))
             </button>
         </div>
 
         <div class="status">
-            @if (!string.IsNullOrWhiteSpace(StatusMessage))
-            {
-                <div class="status-pill">@StatusMessage</div>
-            }
+            <div class="status-pill">@StatusMessage</div>
         </div>
     </div>
 
     <div class="boards">
+        <!-- Player board -->
         <div class="board-card">
             <div class="board-title">Your Fleet</div>
             <div class="board-subtitle">Place ships by clicking cells while in PlacingShips.</div>
@@ -40,14 +37,17 @@
                 <div class="board-grid">
                     @for (var r = 0; r < BoardSize; r++)
                     {
-                        for (var c = 0; c < BoardSize; c++)
+                        @for (var c = 0; c < BoardSize; c++)
                         {
-                            var cell = Game.PlayerBoard.GetCell(r, c);
-                            <button
-                                class="@GetCellCss(cell, isPlayerBoard: true)"
-                                @onclick="() => OnPlayerCellClicked(r, c)"
-                                disabled="@(!IsPlacing)">
-                                @RenderCellFx(cell)
+                            // IMPORTANT: avoid any closure weirdness in Razor lambdas
+                            var row = r;
+                            var col = c;
+
+                            var cell = Game.PlayerBoard.GetCell(row, col);
+
+                            <button class="@GetCellClass(cell, isPlayerBoard: true)"
+                                    @onclick="() => OnPlayerCellClicked(row, col)">
+                                @RenderCell(cell)
                             </button>
                         }
                     }
@@ -62,10 +62,11 @@
             </div>
 
             <div class="board-footer">
-                Ships sunk: @Game.PlayerBoard.ShipsSunk / 5
+                Ships placed: @Game.GetPlayerFleet().Count(s => s.Positions.Count > 0) / @Game.GetPlayerFleet().Count
             </div>
         </div>
 
+        <!-- Enemy board -->
         <div class="board-card">
             <div class="board-title">Enemy Waters</div>
             <div class="board-subtitle">When it's your turn, click to fire on enemy cells.</div>
@@ -74,15 +75,17 @@
                 <div class="board-grid">
                     @for (var r = 0; r < BoardSize; r++)
                     {
-                        for (var c = 0; c < BoardSize; c++)
+                        @for (var c = 0; c < BoardSize; c++)
                         {
-                            var cell = Game.ComputerBoard.GetCell(r, c);
+                            var row = r;
+                            var col = c;
 
-                            <button
-                                class="@GetCellCss(cell, isPlayerBoard: false)"
-                                @onclick="() => OnEnemyCellClicked(r, c)"
-                                disabled="@(!IsPlayerTurn)">
-                                @RenderCellFx(cell)
+                            var cell = Game.EnemyBoard.GetCell(row, col);
+
+                            <button class="@GetCellClass(cell, isPlayerBoard: false)"
+                                    disabled="@(Game.CurrentPhase != GamePhase.PlayerTurn)"
+                                    @onclick="() => OnEnemyCellClicked(row, col)">
+                                @RenderCell(cell)
                             </button>
                         }
                     }
@@ -90,208 +93,153 @@
             </div>
 
             <div class="board-footer">
-                Ships sunk: @Game.ComputerBoard.ShipsSunk / 5
+                Ships sunk: @Game.EnemyBoard.ShipsSunk / @TotalShips
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    private const int BoardSize = GameBoard.BoardSize;
+    private const int BoardSize = 10;
 
-    // Must match CSS sizing in app.css
+    // Match these to your CSS values
     private const int CellPx = 32;
     private const int GapPx = 6;
+    private const int StepPx = CellPx + GapPx;
+
+    private int TotalShips => Game.GetPlayerFleet()?.Count ?? 0;
 
     private bool IsVertical = false;
-
-    public string StatusMessage { get; set; } = "";
+    private string StatusMessage = "Click NEW GAME to begin placing ships.";
 
     private bool IsPlacing => Game.CurrentPhase == GamePhase.PlacingShips;
-    private bool IsPlayerTurn => Game.CurrentPhase == GamePhase.PlayerTurn;
 
     protected override void OnInitialized()
     {
-        Game.GameStateChanged += OnGameStateChanged;
+        // Make sure we start in a sane state
         StatusMessage = "Click NEW GAME to begin placing ships.";
     }
 
-    public void Dispose()
+    private void NewGame()
     {
-        Game.GameStateChanged -= OnGameStateChanged;
-    }
-
-    private void OnGameStateChanged(object? sender, EventArgs e)
-    {
-        _ = InvokeAsync(StateHasChanged);
-
-        if (IsPlacing)
-        {
-            var next = Game.GetNextPlayerShipToPlace();
-            StatusMessage = next is null
-                ? "All ships placed! Game starting..."
-                : $"Placing: {next.Name} (size {next.Size}). Click a starting cell.";
-        }
-        else if (IsPlayerTurn)
-        {
-            StatusMessage = "Your turn. Click on Enemy Waters to fire.";
-        }
-        else if (Game.CurrentPhase == GamePhase.ComputerTurn)
-        {
-            StatusMessage = "Computer is thinking...";
-        }
-        else if (Game.CurrentPhase == GamePhase.GameOver)
-        {
-            StatusMessage = Game.Winner == PlayerType.Human
-                ? "You win! Click NEW GAME to play again."
-                : "Computer wins! Click NEW GAME to try again.";
-        }
-    }
-
-    private void OnNewGameClicked()
-    {
-        IsVertical = false;
         Game.StartNewGame();
-        StatusMessage = "New game started. Place your ships on the board.";
-        StateHasChanged();
+        IsVertical = false;
+
+        var next = Game.GetNextPlayerShipToPlace();
+        StatusMessage = next is null
+            ? "No ships to place."
+            : $"Placing: {next.Name} (size {next.Size}). Orientation: {(IsVertical ? "Vertical" : "Horizontal")}.";
     }
 
     private void ToggleOrientation()
     {
         IsVertical = !IsVertical;
 
-        if (IsPlacing)
+        var next = Game.GetNextPlayerShipToPlace();
+        if (IsPlacing && next is not null)
         {
-            var next = Game.GetNextPlayerShipToPlace();
-            if (next is not null)
-                StatusMessage = $"Placing: {next.Name} (size {next.Size}). Orientation: {(IsVertical ? "Vertical" : "Horizontal")}.";
+            StatusMessage = $"Placing: {next.Name} (size {next.Size}). Orientation: {(IsVertical ? "Vertical" : "Horizontal")}.";
         }
     }
 
     private void OnPlayerCellClicked(int row, int col)
     {
+        // ✅ THIS is the fix: only ignore clicks when NOT placing
         if (!IsPlacing)
             return;
 
         var ship = Game.GetNextPlayerShipToPlace();
         if (ship is null)
         {
-            StatusMessage = "All ships placed already.";
+            StatusMessage = "All ships placed! Game will begin.";
             return;
         }
 
         var ok = Game.PlacePlayerShip(ship, row, col, IsVertical);
         if (!ok)
         {
-            StatusMessage = "Invalid placement. Ships cannot overlap or go off the board.";
+            StatusMessage = "Invalid placement (overlap or off-board). Try another cell.";
             return;
         }
 
         var next = Game.GetNextPlayerShipToPlace();
         StatusMessage = next is null
-            ? "All ships placed! Game starting..."
-            : $"Placed! Next: {next.Name} (size {next.Size}).";
+            ? "All ships placed! Your turn to fire."
+            : $"Placed! Next: {next.Name} (size {next.Size}). Orientation: {(IsVertical ? "Vertical" : "Horizontal")}.";
     }
 
     private void OnEnemyCellClicked(int row, int col)
     {
-        if (!IsPlayerTurn)
-        {
-            StatusMessage = "Not your turn yet (or you haven't finished placing ships).";
+        if (Game.CurrentPhase != GamePhase.PlayerTurn)
             return;
-        }
 
-        var result = Game.PlayerAttack(row, col);
+        var result = Game.PlayerAttacksEnemy(row, col);
+        StatusMessage = result;
 
-        if (result is null)
-        {
-            StatusMessage = "You already fired there. Pick a different cell.";
-            return;
-        }
-
-        StatusMessage = result switch
-        {
-            AttackResult.Hit => $"HIT at {CoordLabel(row, col)}!",
-            AttackResult.Sunk => $"SUNK at {CoordLabel(row, col)}!",
-            AttackResult.Miss => $"Miss at {CoordLabel(row, col)}.",
-            _ => "Invalid attack."
-        };
-
-        if (Game.CurrentPhase == GamePhase.ComputerTurn && !Game.IsGameOver)
-        {
-            Game.ComputerAttack();
-        }
+        // re-render
+        StateHasChanged();
     }
 
-    private static string CoordLabel(int row, int col) => $"{(char)('A' + row)}{col + 1}";
-
-    private static string GetCellCss(Cell cell, bool isPlayerBoard)
+    private string GetCellClass(Cell cell, bool isPlayerBoard)
     {
-        var classes = "board-cell";
+        var cls = "board-cell";
 
-        if (cell.State == CellState.Hit) classes += " cell-hit";
-        if (cell.State == CellState.Miss) classes += " cell-miss";
+        if (isPlayerBoard && cell.HasShip)
+            cls += " cell-has-ship";
 
-        if (isPlayerBoard && cell.Ship is not null)
-            classes += " cell-has-ship";
-
-        return classes;
-    }
-
-    private RenderFragment RenderCellFx(Cell cell) => builder =>
-    {
         if (cell.State == CellState.Hit)
-        {
-            builder.OpenElement(0, "img");
-            builder.AddAttribute(1, "class", "cell-effect");
-            builder.AddAttribute(2, "src", "images/ships/effects/Explosion.png");
-            builder.CloseElement();
-        }
+            cls += " cell-hit";
         else if (cell.State == CellState.Miss)
+            cls += " cell-miss";
+
+        return cls;
+    }
+
+    private RenderFragment RenderCell(Cell cell) => builder =>
+    {
+        // Minimal visuals: hit / miss markers.
+        // Ships are rendered by the ship-sprite overlay.
+        if (cell.State == CellState.Miss)
         {
-            builder.OpenElement(3, "div");
-            builder.AddAttribute(4, "class", "cell-miss-dot");
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "cell-miss-dot");
             builder.CloseElement();
         }
     };
 
-    private static string GetShipSpritePath(Ship ship)
+    private string GetShipSpritePath(Ship ship)
     {
-        return ship.Size switch
+        // Put your PNGs here:
+        // Battleship.Web/wwwroot/images/ships/
+        // Example names:
+        // carrier.png, battleship.png, cruiser.png, submarine.png, destroyer.png
+        return ship.Name.ToLowerInvariant() switch
         {
-            5 => "images/ships/Aircraft_Carrier_5_Pegs.png",
-            4 => "images/ships/Battleship_4_Pegs.png",
-            3 when ship.Name.Contains("Cruiser", StringComparison.OrdinalIgnoreCase) => "images/ships/Cruiser_3_Pegs.png",
-            3 => "images/ships/Submarine_3_Pegs.png",
-            2 => "images/ships/Destroyer_2_Pegs.png",
-            _ => "images/ships/Cruiser_3_Pegs.png"
+            "carrier" => "images/ships/carrier.png",
+            "battleship" => "images/ships/battleship.png",
+            "cruiser" => "images/ships/cruiser.png",
+            "submarine" => "images/ships/submarine.png",
+            "destroyer" => "images/ships/destroyer.png",
+            _ => "images/ships/carrier.png"
         };
     }
 
-    private static string GetShipSpriteStyle(Ship ship)
+    private string GetShipSpriteStyle(Ship ship)
     {
+        // Use the first placed cell as the anchor
+        var anchor = ship.Positions[0];
         var minRow = ship.Positions.Min(p => p.Row);
         var minCol = ship.Positions.Min(p => p.Col);
-        var maxRow = ship.Positions.Max(p => p.Row);
-        var maxCol = ship.Positions.Max(p => p.Col);
 
-        var isVertical = maxRow != minRow;
-        var length = ship.Size;
+        // Determine orientation based on positions
+        var vertical = ship.Positions.Select(p => p.Col).Distinct().Count() == 1;
 
-        // grid math
-        var left = minCol * (CellPx + GapPx);
-        var top = minRow * (CellPx + GapPx);
+        var left = minCol * StepPx;
+        var top = minRow * StepPx;
 
-        // sprite is drawn HORIZONTAL by default
-        var spriteWidth = length * CellPx + (length - 1) * GapPx;
-        var spriteHeight = CellPx;
+        var width = vertical ? CellPx : (ship.Size - 1) * StepPx + CellPx;
+        var height = vertical ? (ship.Size - 1) * StepPx + CellPx : CellPx;
 
-        if (!isVertical)
-        {
-            return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;";
-        }
-
-        return $"left:{left}px; top:{top}px; width:{spriteWidth}px; height:{spriteHeight}px;" +
-               $"transform-origin: top left; transform: rotate(90deg) translateY(-{spriteWidth}px);";
+        return $"left:{left}px; top:{top}px; width:{width}px; height:{height}px;";
     }
 }

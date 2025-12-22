@@ -151,15 +151,27 @@ html, body {
 }
 
 .board-surface {
-  position: relative; /* needed for overlay positioning */
-  display: inline-block;
+  position: relative;
+  width: 386px;   /* 10 * 32px + 9 * 6px */
+  height: 386px;
+  min-width: 386px;
+  min-height: 386px;
+  max-width: 386px;
+  max-height: 386px;
+  overflow: hidden;
 }
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(10, 32px);
   grid-template-rows: repeat(10, 32px);
+  grid-template-columns: repeat(10, 32px);
   gap: 6px;
+  width: 386px;
+  height: 386px;
+  min-width: 386px;
+  min-height: 386px;
+  max-width: 386px;
+  max-height: 386px;
 }
 
 .board-cell {
@@ -227,11 +239,9 @@ html, body {
   position: absolute;
   pointer-events: none;
   object-fit: contain;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
-
-  /* IMPORTANT: force ships above grid buttons */
   z-index: 2;
 }
+
 
 @media (max-width: 980px) {
   .boards {

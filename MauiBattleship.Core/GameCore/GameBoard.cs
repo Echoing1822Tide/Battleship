@@ -1,142 +1,104 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+namespace MauiBattleship.Models;
 
-namespace MauiBattleship.Models
+public class GameBoard
 {
-    public sealed class GameBoard
+    public int Size { get; }
+
+    private readonly Cell[,] _cells;
+    private List<Ship> _fleet = new();
+
+    public int ShipsSunk => _fleet.Count(s => s.IsSunk);
+    public int TotalShips => _fleet.Count;
+    public bool AllShipsSunk => _fleet.Count > 0 && _fleet.All(s => s.IsSunk);
+
+    public GameBoard(int size)
     {
-        public const int BoardSize = 10;
+        Size = size;
+        _cells = new Cell[size, size];
 
-        public Cell[,] Cells { get; }
-        public List<Ship> Ships { get; } = new();
+        for (var r = 0; r < size; r++)
+        for (var c = 0; c < size; c++)
+            _cells[r, c] = new Cell(r, c);
+    }
 
-        public int SunkShipCount { get; private set; }
-        public int TotalShipCount => Ships.Count;
-        public bool AllShipsSunk => TotalShipCount > 0 && SunkShipCount >= TotalShipCount;
+    public void SetFleet(List<Ship> fleet)
+    {
+        _fleet = fleet;
+    }
 
-        // ----------------------------------------------------
-        // Backwards-compatible aliases for older UI code
-        // ----------------------------------------------------
+    public Cell GetCell(int row, int col)
+    {
+        if (!InBounds(row, col))
+            throw new ArgumentOutOfRangeException($"Cell out of bounds ({row},{col}).");
 
-        /// <summary>
-        /// Alias for UI code that expects a ShipsSunk property.
-        /// </summary>
-        public int ShipsSunk => SunkShipCount;
+        return _cells[row, col];
+    }
 
-        /// <summary>
-        /// Simple accessor so UI code can ask the board for a cell.
-        /// </summary>
-        public Cell GetCell(int row, int col) => Cells[row, col];
+    public bool TryPlaceShip(Ship ship, int startRow, int startCol, bool vertical)
+    {
+        if (ship.Positions.Count > 0)
+            return false; // already placed
 
-        public GameBoard()
+        // compute cells needed
+        var coords = new List<(int Row, int Col)>();
+        for (var i = 0; i < ship.Size; i++)
         {
-            Cells = new Cell[BoardSize, BoardSize];
+            var r = vertical ? startRow + i : startRow;
+            var c = vertical ? startCol : startCol + i;
 
-            for (int r = 0; r < BoardSize; r++)
-            {
-                for (int c = 0; c < BoardSize; c++)
-                {
-                    Cells[r, c] = new Cell(r, c);
-                }
-            }
-        }
-
-
-
-        public bool InBounds(int row, int col) =>
-            row >= 0 && row < BoardSize && col >= 0 && col < BoardSize;
-
-        public bool CanPlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
-        {
-            if (ship is null) throw new ArgumentNullException(nameof(ship));
-
-            for (int i = 0; i < ship.Size; i++)
-            {
-                int r = startRow + (orientation == ShipOrientation.Vertical ? i : 0);
-                int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
-
-                if (!InBounds(r, c))
-                    return false;
-
-                if (Cells[r, c].HasShip)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public bool PlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
-        {
-            if (!CanPlaceShip(ship, startRow, startCol, orientation))
+            if (!InBounds(r, c))
                 return false;
 
-            var positions = new List<(int Row, int Col)>();
+            if (_cells[r, c].Ship is not null)
+                return false;
 
-            for (int i = 0; i < ship.Size; i++)
-            {
-                int r = startRow + (orientation == ShipOrientation.Vertical ? i : 0);
-                int c = startCol + (orientation == ShipOrientation.Horizontal ? i : 0);
-
-                var cell = Cells[r, c];
-                cell.Ship = ship;
-                positions.Add((r, c));
-            }
-
-            if (!Ships.Contains(ship))
-            {
-                Ships.Add(ship);
-            }
-
-            ship.SetPositions(positions);
-
-            return true;
+            coords.Add((r, c));
         }
 
-        public AttackResult FireAt(int row, int col)
+        // place
+        foreach (var (r, c) in coords)
         {
-            if (!InBounds(row, col))
-                return AttackResult.Invalid;
-
-            var cell = Cells[row, col];
-
-            if (cell.State == CellState.Hit || cell.State == CellState.Miss)
-                return AttackResult.AlreadyTried;
-
-            if (!cell.HasShip)
-            {
-                cell.State = CellState.Miss;
-                return AttackResult.Miss;
-            }
-
-            cell.State = CellState.Hit;
-
-            var ship = cell.Ship!;
-            ship.RegisterHit();
-
-            if (ship.IsSunk)
-            {
-                SunkShipCount++;
-                return AttackResult.Sunk;
-            }
-
-            return AttackResult.Hit;
+            _cells[r, c].Ship = ship;
+            ship.Positions.Add(new ShipPosition(r, c));
         }
 
-        public void Reset()
-        {
-            Ships.Clear();
-            SunkShipCount = 0;
-
-            for (int r = 0; r < BoardSize; r++)
-            {
-                for (int c = 0; c < BoardSize; c++)
-                {
-                    var cell = Cells[r, c];
-                    cell.Ship = null;
-                    cell.State = CellState.Empty;
-                }
-            }
-        }
+        return true;
     }
+
+    public string Attack(int row, int col)
+    {
+        if (!InBounds(row, col))
+            return "Out of bounds.";
+
+        var cell = _cells[row, col];
+
+        if (cell.State != CellState.Empty)
+            return "Already attacked.";
+
+        if (cell.HasShip && cell.Ship is not null)
+        {
+            cell.State = CellState.Hit;
+            cell.Ship.RegisterHit(row, col);
+
+            if (cell.Ship.IsSunk)
+                return $"Hit and sunk {cell.Ship.Name}!";
+
+            return "Hit!";
+        }
+
+        cell.State = CellState.Miss;
+        return "Miss.";
+    }
+
+    public bool IsAlreadyAttacked(int row, int col)
+    {
+        if (!InBounds(row, col))
+            return true;
+
+        var cell = GetCell(row, col);
+        return cell.State == CellState.Hit || cell.State == CellState.Miss;
+    }
+
+    private bool InBounds(int row, int col)
+        => row >= 0 && row < Size && col >= 0 && col < Size;
 }
