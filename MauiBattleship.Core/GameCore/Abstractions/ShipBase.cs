@@ -1,27 +1,29 @@
-using System;
+using MauiBattleship.GameCore.Models;
 
-namespace MauiBattleship.Core.GameCore.Abstractions;
-
-public abstract class ShipBase
+namespace MauiBattleship.GameCore.Ships
 {
-    public string Name { get; protected set; }
-    public int Size { get; protected set; }
-    public int Health { get; protected set; }
-
-    protected ShipBase()
+    public abstract class ShipBase
     {
-        Name = "Unnamed";
-        Size = 0;
-        Health = 0;
-    }
+        public string Name { get; protected set; } = "";
+        public int Size { get; protected set; }
 
-    protected ShipBase(string name, int size)
-    {
-        Name = name;
-        Size = size;
-        Health = size; // start with HP equal to size, nice/simple default
-    }
+        public bool IsPlaced { get; set; }
+        public bool IsSunk { get; set; }
 
-    public override string ToString() =>
-        $"{GetType().Name} \"{Name}\" (Size {Size}, HP {Health})";
+        // Cells this ship occupies (set at placement time)
+        public List<Cell> Positions { get; } = new();
+
+        public int HitsTaken => Positions.Count(c => c.State == GameCore.Enums.CellState.Hit);
+
+        public void RecalculateSunk()
+        {
+            if (Positions.Count == 0)
+            {
+                IsSunk = false;
+                return;
+            }
+
+            IsSunk = Positions.All(c => c.State == GameCore.Enums.CellState.Hit);
+        }
+    }
 }

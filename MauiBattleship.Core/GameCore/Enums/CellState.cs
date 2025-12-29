@@ -1,9 +1,10 @@
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Enums
 {
     public enum CellState
     {
         Empty = 0,
-        Hit   = 1,
-        Miss  = 2
+        Ship = 1,
+        Miss = 2,
+        Hit = 3
     }
 }

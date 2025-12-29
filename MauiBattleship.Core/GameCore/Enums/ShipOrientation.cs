@@ -1,4 +1,4 @@
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Enums
 {
     public enum ShipOrientation
     {

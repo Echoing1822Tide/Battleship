@@ -1,11 +1,10 @@
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Enums
 {
     public enum GamePhase
     {
-        NotStarted = 0,
-        PlacingShips = 1,
-        PlayerTurn = 2,
-        ComputerTurn = 3,
-        GameOver = 4
+        PlacingShips = 0,
+        PlayerTurn = 1,
+        EnemyTurn = 2,
+        GameOver = 3
     }
 }

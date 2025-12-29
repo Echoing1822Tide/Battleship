@@ -1,11 +1,17 @@
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Enums
 {
-    public enum AttackResult
+    public sealed class AttackResult
     {
-        Invalid = 0,
-        Miss = 1,
-        Hit = 2,
-        Sunk = 3,
-        AlreadyTried = 4
+        public int Row { get; init; }
+        public int Col { get; init; }
+
+        public bool IsHit { get; init; }
+        public bool IsMiss => !IsHit;
+
+        public bool IsSunk { get; init; }
+        public string? SunkShipName { get; init; }
+
+        public bool GameOver { get; init; }
+        public string Message { get; init; } = "";
     }
 }

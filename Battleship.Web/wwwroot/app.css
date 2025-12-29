@@ -1,250 +1,181 @@
+/* --- Base --- */
 :root {
-  --bg-0: #060812;
-  --bg-1: #0b1026;
-  --card: rgba(10, 15, 30, 0.72);
-  --line: rgba(255, 255, 255, 0.14);
-  --text: rgba(255, 255, 255, 0.92);
-  --muted: rgba(255, 255, 255, 0.64);
-  --accent: #29d3ff;
-  --accent-2: #7c3aed;
+  --bg: #070c12;
+  --panel: rgba(13, 24, 40, 0.85);
+  --panel2: rgba(10, 18, 30, 0.85);
+  --text: #e7f0ff;
+  --muted: #a9bfdc;
+  --accent: #55b6ff;
+  --accent2: #2bf0d8;
+  --danger: #ff4b6e;
+
+  --cell: 32px;
+  --gap: 6px;
+  --radius: 14px;
 }
 
 html, body {
-  height: 100%;
-  margin: 0;
-  background: radial-gradient(1200px 600px at 20% 0%, rgba(41,211,255,0.14), transparent 60%),
-              radial-gradient(900px 600px at 80% 20%, rgba(124,58,237,0.12), transparent 55%),
-              linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  background: radial-gradient(1200px 700px at 50% 20%, #0a1730 0%, var(--bg) 55%, #05070a 100%);
   color: var(--text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
-.page-shell {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px 22px 40px;
+/* --- Layout --- */
+.game-shell {
+  max-width: 1100px;
+  margin: 34px auto;
+  padding: 0 16px;
 }
 
-.header {
+.game-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.title {
-  letter-spacing: 2px;
-  font-weight: 800;
-  margin: 0;
-}
-
-.subtitle {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.top-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin: 12px 0 18px;
-}
-
-.controls {
-  display: flex;
+  justify-content: space-between;
+  gap: 16px;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+  border-radius: var(--radius);
+  padding: 18px 18px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
-.phase {
-  margin-right: auto;
-  color: var(--muted);
-  font-size: 12px;
-}
+.title { font-size: 28px; letter-spacing: 2px; font-weight: 800; }
+.subtitle { color: var(--muted); margin-top: 2px; }
+.meta { margin-top: 4px; color: var(--muted); }
+.status { margin-top: 6px; color: var(--accent2); }
 
-.phase-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--text);
-  font-weight: 600;
-}
-
+.controls { display: flex; gap: 10px; }
 .btn {
-  border: 1px solid rgba(255,255,255,0.16);
   background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
   color: var(--text);
-  padding: 9px 14px;
-  border-radius: 999px;
-  cursor: pointer;
+  padding: 9px 12px;
+  border-radius: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  cursor: pointer;
+}
+.btn:hover { border-color: rgba(85,182,255,0.5); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.boards {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-.btn:hover {
-  border-color: rgba(255,255,255,0.26);
-  background: rgba(255,255,255,0.09);
+.board-card {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+  border-radius: var(--radius);
+  padding: 14px 14px 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 10px 35px rgba(0,0,0,0.35);
 }
 
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.board-card h3 { margin: 2px 0 2px; }
+.hint { color: var(--muted); margin-bottom: 10px; }
 
-.btn-primary {
-  border-color: rgba(41,211,255,0.35);
-  background: rgba(41,211,255,0.12);
-  box-shadow: 0 0 24px rgba(41,211,255,0.08);
-}
-
-.btn-secondary {
-  border-color: rgba(255,255,255,0.18);
-}
-
-.status {
-  min-height: 22px;
-}
-
-.status-pill {
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+.footer {
+  margin-top: 10px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.boards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-
-.board-card {
-  border-radius: 18px;
-  background: var(--card);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
-  padding: 18px;
-  overflow: hidden;
-}
-
-.board-title {
-  font-weight: 800;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-
-.board-subtitle {
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-.board-footer {
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 10px;
-}
-
-.board-surface {
-  position: relative;
-  width: 386px;   /* 10 * 32px + 9 * 6px */
-  height: 386px;
-  min-width: 386px;
-  min-height: 386px;
-  max-width: 386px;
-  max-height: 386px;
-  overflow: hidden;
-}
-
+/* --- Board Grid --- */
 .board-grid {
+  position: relative; /* for ship sprites */
   display: grid;
-  grid-template-rows: repeat(10, 32px);
-  grid-template-columns: repeat(10, 32px);
-  gap: 6px;
-  width: 386px;
-  height: 386px;
-  min-width: 386px;
-  min-height: 386px;
-  max-width: 386px;
-  max-height: 386px;
+  grid-template-columns: repeat(10, var(--cell));
+  grid-template-rows: repeat(10, var(--cell));
+  gap: var(--gap);
+  padding: 14px;
+  border-radius: 14px;
+  background: radial-gradient(600px 300px at 50% 20%, rgba(85,182,255,0.18) 0%, rgba(0,0,0,0) 65%),
+              rgba(0, 20, 40, 0.35);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
-.board-cell {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.22);
+/* Cells */
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
   cursor: pointer;
   position: relative;
-  padding: 0;
+  overflow: hidden;
 
-  /* IMPORTANT: keep cells below the ship overlay */
-  z-index: 1;
+  /* “3D” vibe */
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,255,0.08),
+    inset 0 -3px 6px rgba(0,0,0,0.35),
+    0 6px 12px rgba(0,0,0,0.25);
 }
 
-.board-cell:hover {
-  border-color: rgba(41,211,255,0.35);
-  background: rgba(41,211,255,0.07);
+.cell:hover {
+  border-color: rgba(85,182,255,0.55);
+  transform: translateY(-1px);
 }
 
-.board-cell:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.cell--water { }
+.cell--ship {
+  background: linear-gradient(180deg, rgba(180, 200, 255, 0.16), rgba(60, 80, 120, 0.10));
+}
+.cell--miss {
+  background: rgba(85,182,255,0.10);
+}
+.cell--hit {
+  background: rgba(255, 75, 110, 0.12);
+  border-color: rgba(255, 75, 110, 0.5);
 }
 
-.cell-has-ship {
-  border-color: rgba(255,255,255,0.26);
-}
-
-.cell-hit {
-  border-color: rgba(255, 120, 80, 0.45);
-  background: rgba(255, 120, 80, 0.10);
-}
-
-.cell-miss {
-  border-color: rgba(140, 190, 255, 0.35);
-  background: rgba(140, 190, 255, 0.08);
-}
-
-.cell-effect {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-.cell-miss-dot {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(140, 190, 255, 0.9);
-  box-shadow: 0 0 12px rgba(140,190,255,0.35);
-  pointer-events: none;
-}
-
-/* === Ship sprite overlay === */
+/* Ship sprite overlay */
 .ship-sprite {
   position: absolute;
   pointer-events: none;
-  object-fit: contain;
-  z-index: 2;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.55));
+  image-rendering: auto;
+  opacity: 0.95;
 }
 
+/* FX */
+.fx {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  pointer-events: none;
+}
+
+.fx-explosion {
+  width: 120%;
+  height: 120%;
+  object-fit: contain;
+  animation: pop 280ms ease-out;
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,0.6));
+}
+
+.fx-miss {
+  width: 70%;
+  height: 70%;
+  border-radius: 999px;
+  border: 2px solid rgba(85,182,255,0.55);
+  animation: ripple 420ms ease-out;
+  box-shadow: 0 0 20px rgba(85,182,255,0.22);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.75); opacity: 0.0; }
+  40% { opacity: 1.0; }
+  100% { transform: scale(1.08); opacity: 0.0; }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.55); opacity: 0.0; }
+  20% { opacity: 1.0; }
+  100% { transform: scale(1.25); opacity: 0.0; }
+}
 
 @media (max-width: 980px) {
-  .boards {
-    grid-template-columns: 1fr;
-  }
+  .boards { grid-template-columns: 1fr; }
 }

@@ -1,6 +1,7 @@
-using System;
+using MauiBattleship.GameCore.Enums;
+using MauiBattleship.GameCore.Ships;
 
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Models
 {
     public sealed class Cell
     {
@@ -9,20 +10,15 @@ namespace MauiBattleship.Models
 
         public CellState State { get; set; } = CellState.Empty;
 
-        /// <summary>
-        /// Ship occupying this cell (null if none).
-        /// </summary>
-        public Ship? Ship { get; set; } = null;
-
-        /// <summary>
-        /// Convenience flag used by the UI and placement logic.
-        /// </summary>
-        public bool HasShip => Ship != null;
+        // If a ship occupies this cell, reference it (helps UI + sunk logic)
+        public ShipBase? Ship { get; set; }
 
         public Cell(int row, int col)
         {
             Row = row;
             Col = col;
         }
+
+        public bool HasBeenAttacked => State == CellState.Miss || State == CellState.Hit;
     }
 }

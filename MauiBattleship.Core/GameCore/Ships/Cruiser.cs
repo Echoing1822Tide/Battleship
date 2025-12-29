@@ -1,8 +1,11 @@
-using MauiBattleship.Core.GameCore.Abstractions;
-
-namespace MauiBattleship.Core.GameCore.Ships;
-
-public sealed class Cruiser : ShipBase
+namespace MauiBattleship.GameCore.Ships
 {
-    public Cruiser() : base("Cruiser", 3) { }
+    public sealed class Cruiser : ShipBase
+    {
+        public Cruiser()
+        {
+            Name = "Cruiser";
+            Size = 3;
+        }
+    }
 }

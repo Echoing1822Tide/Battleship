@@ -1,9 +1,8 @@
-namespace MauiBattleship.Models
+namespace MauiBattleship.GameCore.Enums
 {
     public enum PlayerType
     {
-        None = 0,
-        Human = 1,
-        Computer = 2
+        Player = 0,
+        Enemy = 1
     }
 }
