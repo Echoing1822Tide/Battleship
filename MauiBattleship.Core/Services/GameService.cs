@@ -63,11 +63,13 @@ namespace MauiBattleship.Services
 
             bool placed = PlayerBoard.PlaceShip(ship, row, col, CurrentOrientation);
             if (!placed)
+            {
+                Console.WriteLine($"Failed to place {ship.Name} at {row},{col} orientation {CurrentOrientation}");
                 return false;
+            }
 
             CurrentPlacementIndex++;
 
-            // Done placing -> player turn
             if (CurrentPlacementIndex >= PlayerShips.Count)
             {
                 Phase = GamePhase.PlayerTurn;

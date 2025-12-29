@@ -24,7 +24,7 @@ namespace MauiBattleship.GameCore
 
         public Cell GetCell(int row, int col) => _cells[row, col];
 
-        public bool InBounds(int row, int col)
+        public static bool InBounds(int row, int col)
             => row >= 0 && row < BoardSize && col >= 0 && col < BoardSize;
 
         public bool CanPlaceShip(ShipBase ship, int startRow, int startCol, ShipOrientation orientation)
