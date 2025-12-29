@@ -45,10 +45,12 @@
                 {
                     for (int c = 0; c < GameBoard.BoardSize; c++)
                     {
-                        var cell = GameService.PlayerBoard.GetCell(r, c);
+                        var row = r;
+                        var col = c;
+                        var cell = GameService.PlayerBoard.GetCell(row, col);
 
                         <button class="@GetCellCss(cell, isEnemy:false)"
-                                @onclick="() => OnPlayerCellClicked(r, c)">
+                                @onclick="() => OnPlayerCellClicked(row, col)">
                             @RenderCellFx(cell)
                         </button>
                     }
@@ -80,11 +82,13 @@
                 {
                     for (int c = 0; c < GameBoard.BoardSize; c++)
                     {
-                        var cell = GameService.EnemyBoard.GetCell(r, c);
+                        var row = r;
+                        var col = c;
+                        var cell = GameService.EnemyBoard.GetCell(row, col);
 
                         <button class="@GetCellCss(cell, isEnemy:true)"
                                 disabled="@(GameService.Phase != GamePhase.PlayerTurn)"
-                                @onclick="() => OnEnemyCellClicked(r, c)">
+                                @onclick="() => OnEnemyCellClicked(row, col)">
                             @RenderCellFx(cell)
                         </button>
                     }
@@ -182,11 +186,16 @@
 
         if (GameService.Phase == GamePhase.EnemyTurn)
         {
-            await Task.Delay(EnemyShotDelayMs);
+            _statusMessage = "Enemy is thinking...";
+            StateHasChanged();
+            await Task.Delay(2500); // 2.5 seconds delay before enemy attacks
 
-            var enemyShot = GameService.EnemyAttackRandom();
-            _statusMessage = $"Enemy fired at ({enemyShot.Row},{enemyShot.Col}): {enemyShot.Message}";
+            var enemyResult = GameService.EnemyAttackRandom();
+            _statusMessage = $"Enemy fired at ({enemyResult.Row},{enemyResult.Col}): {enemyResult.Message}";
+            await Task.Delay(350);
         }
+
+        StateHasChanged();
     }
 
     private string GetCellCss(MauiBattleship.GameCore.Models.Cell cell, bool isEnemy)
@@ -226,7 +235,6 @@
 
     private RenderFragment RenderPlayerShipSprites() => builder =>
     {
-        // Render a sprite per placed ship, positioned from its first cell
         foreach (var ship in GameService.PlayerShips)
         {
             if (!ship.IsPlaced || ship.Positions.Count == 0)
@@ -240,7 +248,8 @@
             int col = first.Col;
 
             string fileKey = GetShipSpriteFileKey(ship);
-            string src = $"images/ships/{fileKey}_{ship.Size}_Pegs.png";
+            string orientation = horizontal ? "horizontal" : "vertical";
+            string src = $"images/ships/{fileKey}_{orientation}.png";
 
             string style = BuildShipSpriteStyle(row, col, ship.Size, horizontal);
 
@@ -256,15 +265,15 @@
     private static string GetShipSpriteFileKey(ShipBase ship)
     {
         // Must match your wwwroot file names:
-        // Aircraft_Carrier_5_Pegs.png, Battleship_4_Pegs.png, Cruiser_3_Pegs.png, Destroyer_2_Pegs.png, Submarine_3_Pegs.png
+        // Aircraft_Carrier_horizontal.png, Battleship_horizontal.png, etc.
         return ship switch
         {
-            Carrier => "Aircraft_Carrier",
-            Battleship => "Battleship",
-            Cruiser => "Cruiser",
-            Destroyer => "Destroyer",
-            Submarine => "Submarine",
-            _ => "Cruiser"
+            Carrier => "Aircraft_Carrier_5_Pegs.png",
+            Battleship => "Battleship_4_Pegs.png",
+            Cruiser => "Cruiser_3_Pegs.png",
+            Destroyer => "Destroyer_2_Pegs.png",
+            Submarine => "Submarine_3_Pegs.png",
+            _ => "Cruiser_3_Pegs.png"
         };
     }
 
@@ -280,8 +289,6 @@
         int width = horizontal ? (size * cell + (size - 1) * gap) : cell;
         int height = horizontal ? cell : (size * cell + (size - 1) * gap);
 
-        string rotate = horizontal ? "rotate(0deg)" : "rotate(90deg)";
-
-        return $"left:{x}px; top:{y}px; width:{width}px; height:{height}px; transform:{rotate};";
+        return $"left:{x}px; top:{y}px; width:{width}px; height:{height}px;";
     }
 }

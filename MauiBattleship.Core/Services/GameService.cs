@@ -167,8 +167,15 @@ namespace MauiBattleship.Services
                         ? ShipOrientation.Horizontal
                         : ShipOrientation.Vertical;
 
-                    int row = _rng.Next(0, GameBoard.BoardSize);
-                    int col = _rng.Next(0, GameBoard.BoardSize);
+                    int maxRow = orientation == ShipOrientation.Vertical
+                        ? GameBoard.BoardSize - ship.Size
+                        : GameBoard.BoardSize - 1;
+                    int maxCol = orientation == ShipOrientation.Horizontal
+                        ? GameBoard.BoardSize - ship.Size
+                        : GameBoard.BoardSize - 1;
+
+                    int row = _rng.Next(0, maxRow + 1);
+                    int col = _rng.Next(0, maxCol + 1);
 
                     placed = EnemyBoard.PlaceShip(ship, row, col, orientation);
                 }
