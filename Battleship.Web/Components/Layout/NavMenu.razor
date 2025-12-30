@@ -16,3 +16,25 @@
     </nav>
 </div>
 
+<nav>
+    <ul>
+        <!-- Add a link to the GitHub README -->
+        <li>
+            <a href="https://github.com/Echoing1822Tide/Battleship/blob/main/README.md" target="_blank" rel="noopener">
+                <span class="oi oi-book" aria-hidden="true"></span> GitHub README
+            </a>
+        </li>
+    </ul>
+</nav>
+
+@* Remove or comment out the error UI that shows the "Unexpected Handled Error" *@
+@* 
+<div class="alert alert-danger" role="alert">
+    <strong>Unexpected Handled Error</strong>
+    <p>@Error?.Message</p>
+</div>
+*@
+@code {
+    [Parameter] public Exception? Error { get; set; }
+}
+

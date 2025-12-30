@@ -106,16 +106,17 @@
 
 @if (_modalOpen)
 {
-    <div class="modal-overlay">
-        <div class="modal-bubble">
+    <div class="modal-backdrop">
+        <div class="modal-card">
             <div class="modal-title">@_modalTitle</div>
-            <div class="modal-body">@_modalBody</div>
+            <div class="modal-message">@_modalBody</div>
             <div class="modal-actions">
-                <button class="btn btn-primary" @onclick="CloseModalAsync">@_modalButtonText</button>
+                <button class="btn btn--accent" @onclick="CloseModalAsync">@_modalButtonText</button>
             </div>
         </div>
     </div>
 }
+
 
 @code
 {
