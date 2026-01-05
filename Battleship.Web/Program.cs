@@ -7,7 +7,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Register the game service used by Home.razor
-builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<MauiBattleship.Services.GameService>();
 
 var app = builder.Build();
 

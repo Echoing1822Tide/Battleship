@@ -1,28 +1,15 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="InteractiveServer" />
-</head>
-
-<body>
+﻿<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Battleship.Web.Components.Layout.MainLayout)" />
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
+
         <NotFound>
-            <NotFound />
+            <LayoutView Layout="@typeof(Battleship.Web.Components.Layout.MainLayout)">
+                <h1>Not Found</h1>
+                <p>Sorry, there`s nothing at this address.</p>
+            </LayoutView>
         </NotFound>
     </Router>
-    <script src="_framework/blazor.web.js"></script>
-</body>
-
-</html>
-
-@using Battleship.Web.Components.Pages
+</CascadingAuthenticationState>

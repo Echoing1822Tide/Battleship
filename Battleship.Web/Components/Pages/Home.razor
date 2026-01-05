@@ -1,9 +1,6 @@
 ﻿@page "/"
+@using MauiBattleship.Models
 @using MauiBattleship.Services
-@using MauiBattleship.GameCore
-@using MauiBattleship.GameCore.Enums
-@using MauiBattleship.GameCore.Models
-@using MauiBattleship.GameCore.Ships
 @inject GameService GameService
 
 <PageTitle>Battleship</PageTitle>
@@ -19,10 +16,11 @@
 
         <div class="controls">
             <button class="btn" @onclick="StartNewGame">NEW GAME</button>
+
             <button class="btn"
                     @onclick="ToggleOrientation"
-                    disabled="@(GameService.Phase != GamePhase.PlacingShips || _modalOpen)">
-                ROTATE SHIP (@(GameService.CurrentOrientation == ShipOrientation.Horizontal ? "HORIZONTAL" : "VERTICAL"))
+                    disabled="@(GameService.Phase != GamePhase.PlacingShips)">
+                ROTATE SHIP (@(GameService.CurrentPlacementIsVertical ? "VERTICAL" : "HORIZONTAL"))
             </button>
         </div>
     </header>
@@ -42,16 +40,15 @@
             </div>
 
             <div class="board-grid">
-                @for (int r = 0; r < GameBoard.BoardSize; r++)
+                @for (int r = 0; r < 10; r++)
                 {
-                    for (int c = 0; c < GameBoard.BoardSize; c++)
+                    for (int c = 0; c < 10; c++)
                     {
                         var row = r;
                         var col = c;
                         var cell = GameService.PlayerBoard.GetCell(row, col);
 
                         <button class="@GetCellCss(cell, isEnemy:false)"
-                                disabled="@_modalOpen"
                                 @onclick="() => OnPlayerCellClicked(row, col)">
                             @RenderCellFx(cell)
                         </button>
@@ -80,16 +77,16 @@
             </div>
 
             <div class="board-grid">
-                @for (int r = 0; r < GameBoard.BoardSize; r++)
+                @for (int r = 0; r < 10; r++)
                 {
-                    for (int c = 0; c < GameBoard.BoardSize; c++)
+                    for (int c = 0; c < 10; c++)
                     {
                         var row = r;
                         var col = c;
                         var cell = GameService.EnemyBoard.GetCell(row, col);
 
                         <button class="@GetCellCss(cell, isEnemy:true)"
-                                disabled="@(GameService.Phase != GamePhase.PlayerTurn || _modalOpen)"
+                                disabled="@(_modalOpen || GameService.Phase != GamePhase.PlayerTurn)"
                                 @onclick="() => OnEnemyCellClicked(row, col)">
                             @RenderCellFx(cell)
                         </button>
@@ -109,64 +106,43 @@
     <div class="modal-backdrop">
         <div class="modal-card">
             <div class="modal-title">@_modalTitle</div>
-            <div class="modal-message">@_modalBody</div>
-            <div class="modal-actions">
-                <button class="btn btn--accent" @onclick="CloseModalAsync">@_modalButtonText</button>
-            </div>
+            <div class="modal-body">@_modalBody</div>
+
+            <button class="btn modal-btn" @onclick="CloseModalAsync">@_modalButtonText</button>
         </div>
     </div>
 }
 
-
-@code
-{
-    private string _statusMessage = "Ready.";
-    private bool _disposed;
-
-    // Modal state
+@code {
+    private string _statusMessage = "Click NEW GAME to begin.";
     private bool _modalOpen;
+
     private string _modalTitle = "";
     private string _modalBody = "";
     private string _modalButtonText = "OK";
     private Func<Task>? _modalOnClose;
 
-    // Timing knobs
-    private const int PlayerShotDelayMs = 250;
-    private const int EnemyShotDelayMs = 450;
+    private const int CellPx = 32;
+    private const int GapPx = 6;
+    private const int GridPaddingPx = 14;
+    private static int StepPx => CellPx + GapPx;
 
     protected override void OnInitialized()
     {
-        GameService.OnChanged += OnGameStateChanged;
-        GameService.NewGame();
-        _statusMessage = "New game started. Place your ships on your board.";
-    }
-
-    private void OnGameStateChanged()
-    {
-        if (_disposed) return;
-        _ = InvokeAsync(() =>
-        {
-            if (_disposed) return;
-            StateHasChanged();
-        });
-    }
-
-    public void Dispose()
-    {
-        _disposed = true;
-        GameService.OnChanged -= OnGameStateChanged;
+        StartNewGame();
     }
 
     private void StartNewGame()
     {
-        GameService.NewGame();
-        _statusMessage = "New game started. Place your ships on your board.";
-        CloseModalImmediate();
+        GameService.StartNewGame();
+        _statusMessage = "Place your fleet. Click your board to place ships.";
+        _modalOpen = false;
     }
 
     private void ToggleOrientation()
     {
         GameService.ToggleOrientation();
+        _statusMessage = $"Orientation: {(GameService.CurrentPlacementIsVertical ? "VERTICAL" : "HORIZONTAL")}";
     }
 
     private void OnPlayerCellClicked(int row, int col)
@@ -187,6 +163,12 @@
         if (GameService.Phase == GamePhase.PlayerTurn)
         {
             _statusMessage = "All ships placed. Your turn!";
+            ShowModal(
+                title: "YOUR TURN",
+                body: "All ships are deployed. Open fire!",
+                buttonText: "FIRE!",
+                onClose: () => Task.CompletedTask
+            );
         }
         else if (GameService.CurrentShipToPlace != null)
         {
@@ -194,44 +176,34 @@
         }
     }
 
-    private async Task OnEnemyCellClicked(int row, int col)
+    private Task OnEnemyCellClicked(int row, int col)
     {
-        if (_modalOpen) return;
+        if (_modalOpen) return Task.CompletedTask;
 
         if (GameService.Phase != GamePhase.PlayerTurn)
-            return;
+            return Task.CompletedTask;
 
-        var before = GameService.EnemyBoard.GetCell(row, col).State;
+        var result = GameService.PlayerAttack(row, col);
 
-        var playerShot = GameService.PlayerAttack(row, col);
-
-        // If they clicked a previously-fired cell, don’t pop a modal—just update status.
-        var after = GameService.EnemyBoard.GetCell(row, col).State;
-        if (before == after && (after == CellState.Miss || after == CellState.Hit))
+        if (result.Message == "Already attacked.")
         {
             _statusMessage = $"You already fired at ({row},{col}).";
-            return;
+            return Task.CompletedTask;
         }
-
-        await Task.Delay(PlayerShotDelayMs);
-
-        bool playerHit = after == CellState.Hit;
-        string? enemyShipName = playerHit ? FindShipNameAt(GameService.EnemyShips, row, col) : null;
 
         if (GameService.Phase == GamePhase.GameOver)
         {
-            // Player ended the game
             ShowGameOverModal(playerWon: true);
-            return;
+            return Task.CompletedTask;
         }
 
-        if (playerHit)
+        if (result.IsHit)
         {
-            var namePart = string.IsNullOrWhiteSpace(enemyShipName) ? "their ship" : $"their {enemyShipName}";
+            var shipText = string.IsNullOrWhiteSpace(result.ShipName) ? "their ship" : $"their {result.ShipName}";
             ShowModal(
                 title: "DIRECT HIT!",
-                body: $"You hit {namePart} at ({row},{col}).",
-                buttonText: "Enemy Turn",
+                body: $"You hit {shipText} at ({row},{col}).",
+                buttonText: "ENEMY TURN",
                 onClose: EnemyAttackSequenceAsync
             );
         }
@@ -240,46 +212,36 @@
             ShowModal(
                 title: "SPLASH!",
                 body: $"YOU MISSED!! ({row},{col})",
-                buttonText: "Enemy Turn",
+                buttonText: "ENEMY TURN",
                 onClose: EnemyAttackSequenceAsync
             );
         }
 
-        _statusMessage = $"You fired at ({row},{col}): {playerShot.Message}";
+        _statusMessage = $"You fired at ({row},{col}): {result.Message}";
+        return Task.CompletedTask;
     }
 
-    private async Task EnemyAttackSequenceAsync()
+    private Task EnemyAttackSequenceAsync()
     {
-        if (GameService.Phase != GamePhase.EnemyTurn && GameService.Phase != GamePhase.PlayerTurn)
-            return;
+        if (GameService.Phase != GamePhase.EnemyTurn)
+            return Task.CompletedTask;
 
-        // If your GameService already flips to EnemyTurn, this still works.
-        _statusMessage = "Enemy is thinking...";
-        StateHasChanged();
-
-        await Task.Delay(EnemyShotDelayMs);
-
-        var enemyResult = GameService.EnemyAttackRandom();
-        var cellState = GameService.PlayerBoard.GetCell(enemyResult.Row, enemyResult.Col).State;
-
-        bool enemyHit = cellState == CellState.Hit;
-        string? playerShipName = enemyHit ? FindShipNameAt(GameService.PlayerShips, enemyResult.Row, enemyResult.Col) : null;
+        var enemy = GameService.EnemyAttackRandom();
 
         if (GameService.Phase == GamePhase.GameOver)
         {
-            // Enemy ended the game
             ShowGameOverModal(playerWon: false);
-            _statusMessage = $"Enemy fired at ({enemyResult.Row},{enemyResult.Col}): {enemyResult.Message}";
-            return;
+            _statusMessage = $"Enemy fired at ({enemy.Row},{enemy.Col}): {enemy.Message}";
+            return Task.CompletedTask;
         }
 
-        if (enemyHit)
+        if (enemy.IsHit)
         {
-            var namePart = string.IsNullOrWhiteSpace(playerShipName) ? "your ship" : $"your {playerShipName}";
+            var shipText = string.IsNullOrWhiteSpace(enemy.ShipName) ? "your ship" : $"your {enemy.ShipName}";
             ShowModal(
-                title: "WE'VE BEEN HIT!",
-                body: $"Enemy fired at ({enemyResult.Row},{enemyResult.Col}): Hit! ({namePart})",
-                buttonText: "Fire Back!",
+                title: "ENEMY HIT!",
+                body: $"Enemy fired at ({enemy.Row},{enemy.Col}): HIT on {shipText}.",
+                buttonText: "FIRE BACK!",
                 onClose: () => Task.CompletedTask
             );
         }
@@ -287,30 +249,36 @@
         {
             ShowModal(
                 title: "ENEMY MISSED!",
-                body: $"Enemy fired at ({enemyResult.Row},{enemyResult.Col}): Miss!",
-                buttonText: "Enemy Missed!",
+                body: $"Enemy fired at ({enemy.Row},{enemy.Col}): Miss!",
+                buttonText: "FIRE BACK!",
                 onClose: () => Task.CompletedTask
             );
         }
 
-        _statusMessage = $"Enemy fired at ({enemyResult.Row},{enemyResult.Col}): {enemyResult.Message}";
+        _statusMessage = $"Enemy fired at ({enemy.Row},{enemy.Col}): {enemy.Message}";
+        return Task.CompletedTask;
     }
 
     private void ShowGameOverModal(bool playerWon)
     {
-        string title = playerWon ? "VICTORY!" : "DEFEAT!";
-        string body = playerWon ? "You Won the War!" : "You Lost the War! Your fleet was destroyed.";
-
-        ShowModal(
-            title: title,
-            body: body,
-            buttonText: "New Game",
-            onClose: () =>
-            {
-                StartNewGame();
-                return Task.CompletedTask;
-            }
-        );
+        if (playerWon)
+        {
+            ShowModal(
+                title: "YOU WON THE WAR!",
+                body: "Enemy fleet destroyed.",
+                buttonText: "NEW GAME",
+                onClose: () => { StartNewGame(); return Task.CompletedTask; }
+            );
+        }
+        else
+        {
+            ShowModal(
+                title: "YOU LOST THE WAR!",
+                body: "Your fleet was destroyed.",
+                buttonText: "NEW GAME",
+                onClose: () => { StartNewGame(); return Task.CompletedTask; }
+            );
+        }
     }
 
     private void ShowModal(string title, string body, string buttonText, Func<Task> onClose)
@@ -325,132 +293,89 @@
 
     private async Task CloseModalAsync()
     {
-        if (!_modalOpen) return;
-
         _modalOpen = false;
-        var handler = _modalOnClose;
-        _modalOnClose = null;
-
         StateHasChanged();
 
-        if (handler != null)
-            await handler();
-    }
+        if (_modalOnClose is not null)
+            await _modalOnClose.Invoke();
 
-    private void CloseModalImmediate()
-    {
-        _modalOpen = false;
         _modalOnClose = null;
+        StateHasChanged();
     }
 
     private string GetCellCss(Cell cell, bool isEnemy)
     {
-        // Enemy board: hide ships until hit
-        if (isEnemy && cell.State == CellState.Ship)
-            return "cell cell--water";
+        var state = cell.State;
 
-        return cell.State switch
+        if (isEnemy && state == CellState.Ship)
+            state = CellState.Water;
+
+        return state switch
         {
-            CellState.Empty => "cell cell--water",
-            CellState.Ship => "cell cell--ship",
-            CellState.Miss => "cell cell--miss",
-            CellState.Hit => "cell cell--hit",
-            _ => "cell cell--water"
+            CellState.Water => "cell cell--water",
+            CellState.Ship  => "cell cell--ship",
+            CellState.Miss  => "cell cell--miss",
+            CellState.Hit   => "cell cell--hit",
+            _ => "cell"
         };
     }
 
     private RenderFragment RenderCellFx(Cell cell) => builder =>
     {
-        // Explosion for hits, simple ripple for miss
         if (cell.State == CellState.Hit)
         {
-            builder.OpenElement(0, "img");
-            builder.AddAttribute(1, "class", "fx fx-explosion");
-            builder.AddAttribute(2, "src", "images/ships/effects/Explosion.png");
-            builder.AddAttribute(3, "alt", "Hit");
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "fx fx-hit");
             builder.CloseElement();
         }
         else if (cell.State == CellState.Miss)
         {
-            builder.OpenElement(10, "div");
-            builder.AddAttribute(11, "class", "fx fx-miss");
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "class", "fx fx-miss");
             builder.CloseElement();
         }
     };
 
     private RenderFragment RenderPlayerShipSprites() => builder =>
     {
-        foreach (var ship in GameService.PlayerShips)
+        foreach (var ship in GameService.PlayerShips.Where(s => s.IsPlaced))
         {
-            if (!ship.IsPlaced || ship.Positions.Count == 0)
-                continue;
+            int minRow = ship.Positions.Min(p => p.Row);
+            int minCol = ship.Positions.Min(p => p.Col);
+            int maxRow = ship.Positions.Max(p => p.Row);
+            int maxCol = ship.Positions.Max(p => p.Col);
 
-            var first = ship.Positions[0];
-            var last = ship.Positions[^1];
+            bool vertical = (maxRow - minRow) >= (maxCol - minCol);
 
-            bool horizontal = first.Row == last.Row;
-            int row = first.Row;
-            int col = first.Col;
+            int length = ship.Size;
 
-            string fileKey = GetShipSpriteFileKey(ship);
-            string src = $"images/ships/{fileKey}.png";
+            int widthPx = vertical ? CellPx : (CellPx * length + GapPx * (length - 1));
+            int heightPx = vertical ? (CellPx * length + GapPx * (length - 1)) : CellPx;
 
-            string style = BuildShipSpriteStyle(row, col, ship.Size, horizontal);
+            int left = GridPaddingPx + (minCol * StepPx);
+            int top  = GridPaddingPx + (minRow * StepPx);
+
+            string src = GetShipImagePath(ship);
 
             builder.OpenElement(0, "img");
             builder.AddAttribute(1, "class", "ship-sprite");
             builder.AddAttribute(2, "src", src);
-            builder.AddAttribute(3, "style", style);
-            builder.AddAttribute(4, "alt", ship.Name);
+            builder.AddAttribute(3, "alt", ship.Name);
+            builder.AddAttribute(4, "style", $"left:{left}px; top:{top}px; width:{widthPx}px; height:{heightPx}px;");
             builder.CloseElement();
         }
     };
 
-    private static string GetShipSpriteFileKey(ShipBase ship)
+    private static string GetShipImagePath(Ship ship)
     {
-        // Your exact wwwroot names (no horizontal/vertical variants)
-        return ship switch
+        return ship.Name switch
         {
-            Carrier => "Aircraft_Carrier_5_Pegs",
-            Battleship => "Battleship_4_Pegs",
-            Cruiser => "Cruiser_3_Pegs",
-            Submarine => "Submarine_3_Pegs",
-            Destroyer => "Destroyer_2_Pegs",
-            _ => "Cruiser_3_Pegs"
+            "Aircraft Carrier" => "images/Aircraft_Carrier_5_Pegs.png",
+            "Battleship"       => "images/Battleship_4_Pegs.png",
+            "Cruiser"          => "images/Cruiser_3_Pegs.png",
+            "Submarine"        => "images/Submarine_3_Pegs.png",
+            "Destroyer"        => "images/Destroyer_2_Pegs.png",
+            _ => "images/Battleship_4_Pegs.png"
         };
-    }
-
-    private static string BuildShipSpriteStyle(int row, int col, int size, bool horizontal)
-    {
-        // Must match app.css:
-        // --cell: 32px; --gap: 6px;
-        const int cell = 32;
-        const int gap = 6;
-
-        int x = col * (cell + gap);
-        int y = row * (cell + gap);
-
-        int width = horizontal ? (size * cell + (size - 1) * gap) : cell;
-        int height = horizontal ? cell : (size * cell + (size - 1) * gap);
-
-        // If vertical, rotate the same image 90 degrees.
-        // We translate by its height so it “drops” into the grid instead of swinging out of bounds.
-        if (!horizontal)
-        {
-            return $"left:{x}px; top:{y}px; width:{width}px; height:{height}px; transform: rotate(90deg) translateY(-{width}px);";
-        }
-
-        return $"left:{x}px; top:{y}px; width:{width}px; height:{height}px;";
-    }
-
-    private static string? FindShipNameAt(IEnumerable<ShipBase> ships, int row, int col)
-    {
-        foreach (var s in ships)
-        {
-            if (!s.IsPlaced) continue;
-            if (s.Positions.Any(p => p.Row == row && p.Col == col))
-                return s.Name;
-        }
-        return null;
     }
 }
