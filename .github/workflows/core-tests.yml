@@ -22,13 +22,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-          include-prerelease: true
 
       - name: Install MAUI workload
         run: dotnet workload install maui --skip-sign-check
 
       - name: Restore
-        run: dotnet restore BattleshipMaui.sln -r win-x64
+        run: dotnet restore BattleshipMaui.sln -r win-x64 -p:PublishReadyToRun=false
 
       - name: Run core CI tests (exactly 9)
-        run: dotnet test BattleshipMaui.Tests/BattleshipMaui.Tests.csproj --configuration Release --no-restore --filter "Category=Core9"
+        run: dotnet test BattleshipMaui.Tests/BattleshipMaui.Tests.csproj --configuration Release --no-restore --filter "Category=Core9" -p:PublishReadyToRun=false
