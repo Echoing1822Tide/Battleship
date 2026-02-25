@@ -11,9 +11,13 @@ public class BoardViewModel : ObservableObject
 {
     private readonly Random _random;
     private readonly IGameStatsStore _statsStore;
+    private readonly IGameSettingsStore _settingsStore;
+    private readonly IGameFeedbackService _feedbackService;
     private readonly Dictionary<string, Ship> _playerShipsByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ShipSpriteVm> _playerSpritesByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ShipSpriteVm> _enemySpritesByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<BoardCoordinate> _easyEnemyShotQueue = new();
+    private readonly List<PlayerShotRecord> _currentGameShotHistory = new();
 
     private GameBoard? _playerBoard;
     private GameBoard? _enemyBoard;
@@ -39,6 +43,25 @@ public class BoardViewModel : ObservableObject
     private int _currentGameShots;
     private int _currentGameHits;
     private string _lastGameSummary = "No completed games yet.";
+    private string _analyticsAccuracyByPhase = "Accuracy by phase: --";
+    private string _analyticsStreaks = "Streaks: --";
+    private string _analyticsBestSequence = "Best turn sequence: --";
+
+    private bool _isSettingsOpen = true;
+    private bool _isOverlayVisible;
+    private bool _showOverlayRecap;
+    private bool _showOverlayAnalytics;
+    private string _overlayTitle = "Operation Start";
+    private string _overlaySubtitle = "Place your fleet to begin the battle.";
+    private string _overlayPrimaryActionText = "Deploy Fleet";
+
+    private CpuDifficulty _selectedDifficulty = CpuDifficulty.Standard;
+    private AnimationSpeed _selectedAnimationSpeed = AnimationSpeed.Normal;
+    private bool _soundEnabled = true;
+    private bool _hapticsEnabled = true;
+    private bool _highContrastMode;
+    private bool _largeTextMode;
+    private bool _reduceMotionMode;
 
     public const int Size = 10;
     public const double CellSize = 32;
@@ -65,6 +88,10 @@ public class BoardViewModel : ObservableObject
     public ObservableCollection<ShipSpriteVm> PlayerShipSprites { get; } = new();
     public ObservableCollection<ShipSpriteVm> EnemyShipSprites { get; } = new();
     public ObservableCollection<PlacementShipVm> PlacementShips { get; } = new();
+    public ObservableCollection<FleetRecapItemVm> FleetRecapItems { get; } = new();
+
+    public IReadOnlyList<CpuDifficulty> DifficultyOptions { get; } = Enum.GetValues<CpuDifficulty>();
+    public IReadOnlyList<AnimationSpeed> AnimationSpeedOptions { get; } = Enum.GetValues<AnimationSpeed>();
 
     public ICommand EnemyCellTappedCommand { get; }
     public ICommand PlayerCellTappedCommand { get; }
@@ -72,6 +99,8 @@ public class BoardViewModel : ObservableObject
     public ICommand RotatePlacementCommand { get; }
     public ICommand NewGameCommand { get; }
     public ICommand ResetStatsCommand { get; }
+    public ICommand ToggleSettingsPanelCommand { get; }
+    public ICommand DismissOverlayCommand { get; }
 
     public bool IsPlayerTurn
     {
@@ -321,6 +350,208 @@ public class BoardViewModel : ObservableObject
         }
     }
 
+    public string AnalyticsAccuracyByPhase
+    {
+        get => _analyticsAccuracyByPhase;
+        private set
+        {
+            if (_analyticsAccuracyByPhase == value) return;
+            _analyticsAccuracyByPhase = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string AnalyticsStreaks
+    {
+        get => _analyticsStreaks;
+        private set
+        {
+            if (_analyticsStreaks == value) return;
+            _analyticsStreaks = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string AnalyticsBestSequence
+    {
+        get => _analyticsBestSequence;
+        private set
+        {
+            if (_analyticsBestSequence == value) return;
+            _analyticsBestSequence = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsSettingsOpen
+    {
+        get => _isSettingsOpen;
+        set
+        {
+            if (_isSettingsOpen == value) return;
+            _isSettingsOpen = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SettingsToggleText));
+            SaveSettings();
+        }
+    }
+
+    public string SettingsToggleText => IsSettingsOpen ? "Hide Settings" : "Show Settings";
+
+    public CpuDifficulty SelectedDifficulty
+    {
+        get => _selectedDifficulty;
+        set
+        {
+            if (_selectedDifficulty == value) return;
+            _selectedDifficulty = value;
+            OnPropertyChanged();
+            SaveSettings();
+        }
+    }
+
+    public AnimationSpeed SelectedAnimationSpeed
+    {
+        get => _selectedAnimationSpeed;
+        set
+        {
+            if (_selectedAnimationSpeed == value) return;
+            _selectedAnimationSpeed = value;
+            OnPropertyChanged();
+            ApplyAnimationSettings();
+            SaveSettings();
+        }
+    }
+
+    public bool SoundEnabled
+    {
+        get => _soundEnabled;
+        set
+        {
+            if (_soundEnabled == value) return;
+            _soundEnabled = value;
+            OnPropertyChanged();
+            SaveSettings();
+        }
+    }
+
+    public bool HapticsEnabled
+    {
+        get => _hapticsEnabled;
+        set
+        {
+            if (_hapticsEnabled == value) return;
+            _hapticsEnabled = value;
+            OnPropertyChanged();
+            SaveSettings();
+        }
+    }
+
+    public bool HighContrastMode
+    {
+        get => _highContrastMode;
+        set
+        {
+            if (_highContrastMode == value) return;
+            _highContrastMode = value;
+            OnPropertyChanged();
+            ApplyVisualSettings();
+            SaveSettings();
+        }
+    }
+
+    public bool LargeTextMode
+    {
+        get => _largeTextMode;
+        set
+        {
+            if (_largeTextMode == value) return;
+            _largeTextMode = value;
+            OnPropertyChanged();
+            ApplyVisualSettings();
+            SaveSettings();
+        }
+    }
+
+    public bool ReduceMotionMode
+    {
+        get => _reduceMotionMode;
+        set
+        {
+            if (_reduceMotionMode == value) return;
+            _reduceMotionMode = value;
+            OnPropertyChanged();
+            ApplyAnimationSettings();
+            SaveSettings();
+        }
+    }
+
+    public bool IsOverlayVisible
+    {
+        get => _isOverlayVisible;
+        private set
+        {
+            if (_isOverlayVisible == value) return;
+            _isOverlayVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowOverlayRecap
+    {
+        get => _showOverlayRecap;
+        private set
+        {
+            if (_showOverlayRecap == value) return;
+            _showOverlayRecap = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowOverlayAnalytics
+    {
+        get => _showOverlayAnalytics;
+        private set
+        {
+            if (_showOverlayAnalytics == value) return;
+            _showOverlayAnalytics = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string OverlayTitle
+    {
+        get => _overlayTitle;
+        private set
+        {
+            if (_overlayTitle == value) return;
+            _overlayTitle = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string OverlaySubtitle
+    {
+        get => _overlaySubtitle;
+        private set
+        {
+            if (_overlaySubtitle == value) return;
+            _overlaySubtitle = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string OverlayPrimaryActionText
+    {
+        get => _overlayPrimaryActionText;
+        private set
+        {
+            if (_overlayPrimaryActionText == value) return;
+            _overlayPrimaryActionText = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string PlacementOrientationText =>
         IsVerticalPlacement ? "Orientation: Vertical" : "Orientation: Horizontal";
 
@@ -351,19 +582,42 @@ public class BoardViewModel : ObservableObject
     }
 
     public BoardViewModel()
-        : this(new Random(), new JsonFileGameStatsStore())
+        : this(
+            new Random(),
+            new JsonFileGameStatsStore(),
+            new JsonFileGameSettingsStore(),
+            new DefaultGameFeedbackService())
     {
     }
 
     public BoardViewModel(Random random)
-        : this(random, new JsonFileGameStatsStore())
+        : this(
+            random,
+            new JsonFileGameStatsStore(),
+            new JsonFileGameSettingsStore(),
+            new DefaultGameFeedbackService())
     {
     }
 
     public BoardViewModel(Random random, IGameStatsStore statsStore)
+        : this(
+            random,
+            statsStore,
+            new JsonFileGameSettingsStore(),
+            new DefaultGameFeedbackService())
+    {
+    }
+
+    public BoardViewModel(
+        Random random,
+        IGameStatsStore statsStore,
+        IGameSettingsStore settingsStore,
+        IGameFeedbackService feedbackService)
     {
         _random = random ?? throw new ArgumentNullException(nameof(random));
         _statsStore = statsStore ?? throw new ArgumentNullException(nameof(statsStore));
+        _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
+        _feedbackService = feedbackService ?? throw new ArgumentNullException(nameof(feedbackService));
 
         EnemyCellTappedCommand = new Command<BoardCellVm>(OnEnemyCellTapped);
         PlayerCellTappedCommand = new Command<BoardCellVm>(OnPlayerCellTapped);
@@ -371,8 +625,13 @@ public class BoardViewModel : ObservableObject
         RotatePlacementCommand = new Command(TogglePlacementOrientation);
         NewGameCommand = new Command(StartNewGame);
         ResetStatsCommand = new Command(ResetStats);
+        ToggleSettingsPanelCommand = new Command(() => IsSettingsOpen = !IsSettingsOpen);
+        DismissOverlayCommand = new Command(DismissOverlay);
 
         LoadStats();
+        LoadSettings();
+        ApplyVisualSettings();
+        ApplyAnimationSettings();
         InitializeCells(EnemyCells);
         InitializeCells(PlayerCells);
         StartNewGame();
@@ -387,6 +646,19 @@ public class BoardViewModel : ObservableObject
         TotalTurns = snapshot.TotalTurns;
         TotalShots = snapshot.TotalShots;
         TotalHits = snapshot.TotalHits;
+    }
+
+    private void LoadSettings()
+    {
+        var settings = _settingsStore.Load();
+        _selectedDifficulty = settings.Difficulty;
+        _selectedAnimationSpeed = settings.AnimationSpeed;
+        _soundEnabled = settings.SoundEnabled;
+        _hapticsEnabled = settings.HapticsEnabled;
+        _highContrastMode = settings.HighContrastMode;
+        _largeTextMode = settings.LargeTextMode;
+        _reduceMotionMode = settings.ReduceMotionMode;
+        _isSettingsOpen = settings.SettingsPanelOpen;
     }
 
     private void ResetCurrentGameStats()
@@ -405,9 +677,57 @@ public class BoardViewModel : ObservableObject
         TotalShots = 0;
         TotalHits = 0;
         ResetCurrentGameStats();
+        _currentGameShotHistory.Clear();
+        AnalyticsAccuracyByPhase = "Accuracy by phase: --";
+        AnalyticsStreaks = "Streaks: --";
+        AnalyticsBestSequence = "Best turn sequence: --";
         LastGameSummary = "Stats reset.";
         SaveStats();
         StatusMessage = "Saved stats reset.";
+    }
+
+    private void SaveSettings()
+    {
+        _settingsStore.Save(new GameSettingsSnapshot(
+            SelectedDifficulty,
+            SelectedAnimationSpeed,
+            SoundEnabled,
+            HapticsEnabled,
+            HighContrastMode,
+            LargeTextMode,
+            ReduceMotionMode,
+            IsSettingsOpen));
+    }
+
+    private static double GetAnimationSpeedMultiplier(AnimationSpeed speed)
+    {
+        return speed switch
+        {
+            AnimationSpeed.Slow => 1.35,
+            AnimationSpeed.Fast => 0.75,
+            _ => 1.0
+        };
+    }
+
+    private void ApplyVisualSettings()
+    {
+        ThemeTokenService.Apply(highContrast: HighContrastMode, largeText: LargeTextMode);
+    }
+
+    private void ApplyAnimationSettings()
+    {
+        AnimationRuntimeSettings.SpeedMultiplier = GetAnimationSpeedMultiplier(SelectedAnimationSpeed);
+        AnimationRuntimeSettings.ReduceMotion = ReduceMotionMode;
+    }
+
+    private void EmitFeedback(GameFeedbackCue cue)
+    {
+        _feedbackService.Play(cue, SoundEnabled, HapticsEnabled, ReduceMotionMode);
+    }
+
+    private void DismissOverlay()
+    {
+        IsOverlayVisible = false;
     }
 
     private void SaveStats()
@@ -423,6 +743,12 @@ public class BoardViewModel : ObservableObject
 
     private void RecordPlayerShot(ShotInfo shot)
     {
+        _currentGameShotHistory.Add(new PlayerShotRecord(
+            CurrentGameTurns + 1,
+            shot.Row,
+            shot.Col,
+            shot.IsHit));
+
         TotalTurns++;
         TotalShots++;
         CurrentGameTurns++;
@@ -452,15 +778,162 @@ public class BoardViewModel : ObservableObject
                 break;
         }
 
+        ComputePostGameAnalytics();
         LastGameSummary =
             $"{outcome} - turns {CurrentGameTurns}, shots {CurrentGameShots}, hits {CurrentGameHits}, hit rate {CurrentGameHitRate:P0}";
 
         SaveStats();
     }
 
+    private void ComputePostGameAnalytics()
+    {
+        if (_currentGameShotHistory.Count == 0)
+        {
+            AnalyticsAccuracyByPhase = "Accuracy by phase: --";
+            AnalyticsStreaks = "Streaks: --";
+            AnalyticsBestSequence = "Best turn sequence: --";
+            return;
+        }
+
+        int totalShots = _currentGameShotHistory.Count;
+        int segmentSize = Math.Max(1, (int)Math.Ceiling(totalShots / 3d));
+
+        var opening = _currentGameShotHistory.Take(segmentSize).ToList();
+        var mid = _currentGameShotHistory.Skip(segmentSize).Take(segmentSize).ToList();
+        var end = _currentGameShotHistory.Skip(segmentSize * 2).ToList();
+
+        AnalyticsAccuracyByPhase =
+            $"Accuracy by phase: Opening {FormatAccuracy(opening)}, Midgame {FormatAccuracy(mid)}, Endgame {FormatAccuracy(end)}";
+
+        int longestHitStreak = 0;
+        int longestMissStreak = 0;
+        int currentHitStreak = 0;
+        int currentMissStreak = 0;
+
+        int bestRunStart = -1;
+        int bestRunLength = 0;
+        int currentRunStart = -1;
+        int currentRunLength = 0;
+
+        for (int index = 0; index < _currentGameShotHistory.Count; index++)
+        {
+            bool isHit = _currentGameShotHistory[index].IsHit;
+
+            if (isHit)
+            {
+                currentHitStreak++;
+                currentMissStreak = 0;
+                longestHitStreak = Math.Max(longestHitStreak, currentHitStreak);
+
+                if (currentRunLength == 0)
+                    currentRunStart = index;
+
+                currentRunLength++;
+                if (currentRunLength > bestRunLength)
+                {
+                    bestRunLength = currentRunLength;
+                    bestRunStart = currentRunStart;
+                }
+            }
+            else
+            {
+                currentMissStreak++;
+                currentHitStreak = 0;
+                longestMissStreak = Math.Max(longestMissStreak, currentMissStreak);
+                currentRunLength = 0;
+                currentRunStart = -1;
+            }
+        }
+
+        AnalyticsStreaks = $"Streaks: best hits {longestHitStreak}, best misses {longestMissStreak}";
+
+        if (bestRunLength <= 1 || bestRunStart < 0)
+        {
+            AnalyticsBestSequence = "Best turn sequence: No multi-hit streak recorded.";
+            return;
+        }
+
+        var bestRunCoordinates = _currentGameShotHistory
+            .Skip(bestRunStart)
+            .Take(bestRunLength)
+            .Select(shot => ToBoardCoordinate(shot.Row, shot.Col));
+
+        AnalyticsBestSequence =
+            $"Best turn sequence: {string.Join(" -> ", bestRunCoordinates)} ({bestRunLength} hits)";
+    }
+
+    private static string FormatAccuracy(IReadOnlyCollection<PlayerShotRecord> shots)
+    {
+        if (shots.Count == 0)
+            return "--";
+
+        int hits = shots.Count(shot => shot.IsHit);
+        return $"{(double)hits / shots.Count:P0}";
+    }
+
+    private void BuildFleetRecap()
+    {
+        FleetRecapItems.Clear();
+        if (_enemyBoard is null)
+            return;
+
+        foreach (var template in FleetTemplates)
+        {
+            var ship = _enemyBoard.Fleet.FirstOrDefault(s => string.Equals(s.Name, template.Name, StringComparison.OrdinalIgnoreCase));
+            if (ship is null)
+                continue;
+
+            FleetRecapItems.Add(new FleetRecapItemVm(
+                ship.Name,
+                template.ImageSource,
+                ship.IsSunk,
+                ship.IsSunk ? "Destroyed" : "Survived"));
+        }
+    }
+
+    private void ShowGameStartOverlay()
+    {
+        FleetRecapItems.Clear();
+        OverlayTitle = "Operation Start";
+        OverlaySubtitle = "Deploy your fleet, then hunt enemy ships one coordinate at a time.";
+        OverlayPrimaryActionText = "Deploy Fleet";
+        ShowOverlayRecap = false;
+        ShowOverlayAnalytics = false;
+        IsOverlayVisible = true;
+    }
+
+    private void ShowGameOverOverlay(GameOutcome outcome)
+    {
+        BuildFleetRecap();
+
+        OverlayTitle = outcome switch
+        {
+            GameOutcome.Win => "Victory Debrief",
+            GameOutcome.Loss => "Mission Lost",
+            _ => "Draw Debrief"
+        };
+
+        OverlaySubtitle = outcome switch
+        {
+            GameOutcome.Win => "Enemy fleet neutralized. Review your battle analytics below.",
+            GameOutcome.Loss => "Your fleet was destroyed. Review the battle and prepare a better opening.",
+            _ => "All shots exhausted. Review the battle recap and analytics."
+        };
+
+        OverlayPrimaryActionText = "Close Debrief";
+        ShowOverlayRecap = true;
+        ShowOverlayAnalytics = true;
+        IsOverlayVisible = true;
+    }
+
     private void StartNewGame()
     {
         ResetCurrentGameStats();
+        _currentGameShotHistory.Clear();
+        AnalyticsAccuracyByPhase = "Accuracy by phase: --";
+        AnalyticsStreaks = "Streaks: --";
+        AnalyticsBestSequence = "Best turn sequence: --";
+
         _playerBoard = new GameBoard(Size);
         _enemyBoard = new GameBoard(Size);
 
@@ -493,6 +966,10 @@ public class BoardViewModel : ObservableObject
         StatusMessage = "Select a ship and tap Your Fleet board to place it.";
         PlayerLastShotMessage = "Your last shot: --";
         EnemyLastShotMessage = "Enemy last shot: --";
+        OverlayPrimaryActionText = "Deploy Fleet";
+
+        ShowGameStartOverlay();
+        EmitFeedback(GameFeedbackCue.NewGame);
 
         OnPropertyChanged(nameof(PlacementOrientationText));
         OnPropertyChanged(nameof(PlacementSelectionMessage));
@@ -606,6 +1083,7 @@ public class BoardViewModel : ObservableObject
 
         _selectedPlacementShip.IsPlaced = true;
         AddPlayerShipSprite(ship, _selectedPlacementShip.ImageSource);
+        EmitFeedback(GameFeedbackCue.PlaceShip);
 
         var coordinate = ToBoardCoordinate(targetCell.Row, targetCell.Col);
         StatusMessage = $"Placed {_selectedPlacementShip.Name} at {coordinate}.";
@@ -627,6 +1105,7 @@ public class BoardViewModel : ObservableObject
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
         StatusMessage = "All ships placed. Tap a cell on Enemy Waters to fire.";
+        EmitFeedback(GameFeedbackCue.PlacementComplete);
     }
 
     private void AddPlayerShipSprite(Ship ship, string imageSource)
@@ -709,7 +1188,63 @@ public class BoardViewModel : ObservableObject
 
     private void InitializeEnemyTargeting()
     {
+        _enemyTargetingStrategy = null;
+        _easyEnemyShotQueue.Clear();
+
+        if (SelectedDifficulty == CpuDifficulty.Easy)
+        {
+            var coordinates = new List<BoardCoordinate>(Size * Size);
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                    coordinates.Add(new BoardCoordinate(row, col));
+            }
+
+            for (int i = coordinates.Count - 1; i > 0; i--)
+            {
+                int j = _random.Next(i + 1);
+                (coordinates[i], coordinates[j]) = (coordinates[j], coordinates[i]);
+            }
+
+            foreach (var coordinate in coordinates)
+                _easyEnemyShotQueue.Enqueue(coordinate);
+
+            return;
+        }
+
         _enemyTargetingStrategy = new EnemyTargetingStrategy(Size, _random);
+    }
+
+    private bool TryGetNextEnemyTarget(out BoardCoordinate target)
+    {
+        if (SelectedDifficulty == CpuDifficulty.Easy)
+        {
+            if (_easyEnemyShotQueue.Count > 0)
+            {
+                target = _easyEnemyShotQueue.Dequeue();
+                return true;
+            }
+
+            target = default;
+            return false;
+        }
+
+        if (_enemyTargetingStrategy is null)
+        {
+            target = default;
+            return false;
+        }
+
+        try
+        {
+            target = _enemyTargetingStrategy.GetNextShot();
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            target = default;
+            return false;
+        }
     }
 
     private void RevealEnemyFleet()
@@ -752,6 +1287,13 @@ public class BoardViewModel : ObservableObject
 
         RecordPlayerShot(playerShot);
         ApplyShotResult(EnemyCells, playerShot);
+        EmitFeedback(playerShot.Result switch
+        {
+            AttackResult.Sunk => GameFeedbackCue.Sunk,
+            AttackResult.Hit => GameFeedbackCue.Hit,
+            _ => GameFeedbackCue.Miss
+        });
+
         PlayerLastShotMessage = $"Your last shot: {ToBoardCoordinate(playerShot.Row, playerShot.Col)} - {playerShot.Message}";
         StatusMessage = "Enemy is firing...";
         OnPropertyChanged(nameof(ScoreLine));
@@ -771,7 +1313,9 @@ public class BoardViewModel : ObservableObject
             StatusMessage = "All enemy ships sunk. You win.";
             EnemyLastShotMessage = "Enemy last shot: --";
             RecordGameOutcome(GameOutcome.Win);
+            EmitFeedback(GameFeedbackCue.Win);
             RevealEnemyFleet();
+            ShowGameOverOverlay(GameOutcome.Win);
             return;
         }
 
@@ -782,52 +1326,77 @@ public class BoardViewModel : ObservableObject
 
     private void EnemyTakeTurn()
     {
-        if (_playerBoard is null || _enemyTargetingStrategy is null)
+        if (_playerBoard is null)
             return;
 
-        BoardCoordinate target;
-        try
+        int maxShotsThisTurn = SelectedDifficulty == CpuDifficulty.Hard ? 2 : 1;
+        ShotInfo? lastShot = null;
+
+        for (int shotNumber = 0; shotNumber < maxShotsThisTurn; shotNumber++)
         {
-            target = _enemyTargetingStrategy.GetNextShot();
+            if (!TryGetNextEnemyTarget(out var target))
+            {
+                IsGameOver = true;
+                TurnMessage = "Draw";
+                StatusMessage = "No remaining shots.";
+                EnemyLastShotMessage = "Enemy last shot: --";
+                RecordGameOutcome(GameOutcome.Draw);
+                EmitFeedback(GameFeedbackCue.Draw);
+                RevealEnemyFleet();
+                ShowGameOverOverlay(GameOutcome.Draw);
+                return;
+            }
+
+            var enemyShot = _playerBoard.Attack(target.Row, target.Col);
+            lastShot = enemyShot;
+
+            if (_enemyTargetingStrategy is not null)
+                _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result);
+
+            ApplyShotResult(PlayerCells, enemyShot);
+
+            if (enemyShot.Result == AttackResult.Sunk &&
+                enemyShot.SunkShipName is not null &&
+                _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
+            {
+                sprite.MarkSunk();
+            }
+
+            OnPropertyChanged(nameof(ScoreLine));
+
+            EmitFeedback(enemyShot.Result switch
+            {
+                AttackResult.Sunk => GameFeedbackCue.Sunk,
+                AttackResult.Hit => GameFeedbackCue.Hit,
+                _ => GameFeedbackCue.Miss
+            });
+
+            if (_playerBoard.AllShipsSunk)
+            {
+                IsGameOver = true;
+                TurnMessage = "Defeat";
+                EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
+                StatusMessage = "All your ships have been sunk. You lose.";
+                RecordGameOutcome(GameOutcome.Loss);
+                EmitFeedback(GameFeedbackCue.Loss);
+                RevealEnemyFleet();
+                ShowGameOverOverlay(GameOutcome.Loss);
+                return;
+            }
+
+            bool grantBonusShot = SelectedDifficulty == CpuDifficulty.Hard && enemyShot.IsHit;
+            if (!grantBonusShot)
+                break;
+
+            StatusMessage = "Enemy scored a hit and takes an aggressive follow-up shot.";
         }
-        catch (InvalidOperationException)
-        {
-            IsGameOver = true;
-            TurnMessage = "Draw";
-            StatusMessage = "No remaining shots.";
-            EnemyLastShotMessage = "Enemy last shot: --";
-            RecordGameOutcome(GameOutcome.Draw);
-            RevealEnemyFleet();
+
+        if (lastShot is null)
             return;
-        }
-
-        var enemyShot = _playerBoard.Attack(target.Row, target.Col);
-        _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result);
-        ApplyShotResult(PlayerCells, enemyShot);
-
-        if (enemyShot.Result == AttackResult.Sunk &&
-            enemyShot.SunkShipName is not null &&
-            _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
-        {
-            sprite.MarkSunk();
-        }
-
-        OnPropertyChanged(nameof(ScoreLine));
-
-        if (_playerBoard.AllShipsSunk)
-        {
-            IsGameOver = true;
-            TurnMessage = "Defeat";
-            EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
-            StatusMessage = "All your ships have been sunk. You lose.";
-            RecordGameOutcome(GameOutcome.Loss);
-            RevealEnemyFleet();
-            return;
-        }
 
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
-        EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
+        EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(lastShot.Row, lastShot.Col)} - {lastShot.Message}";
         StatusMessage = "Tap a cell on Enemy Waters to fire.";
     }
 
@@ -844,6 +1413,52 @@ public class BoardViewModel : ObservableObject
     {
         char letter = (char)('A' + row);
         return $"{letter}{col + 1}";
+    }
+}
+
+public enum CpuDifficulty
+{
+    Standard = 0,
+    Easy = 1,
+    Hard = 2
+}
+
+public enum AnimationSpeed
+{
+    Normal = 0,
+    Slow = 1,
+    Fast = 2
+}
+
+public enum GameFeedbackCue
+{
+    NewGame = 0,
+    PlaceShip = 1,
+    PlacementComplete = 2,
+    Miss = 3,
+    Hit = 4,
+    Sunk = 5,
+    Win = 6,
+    Loss = 7,
+    Draw = 8
+}
+
+public readonly record struct PlayerShotRecord(int TurnNumber, int Row, int Col, bool IsHit);
+
+public sealed class FleetRecapItemVm
+{
+    public string Name { get; }
+    public string ImageSource { get; }
+    public bool IsSunk { get; }
+    public string StatusText { get; }
+    public Color StatusColor => IsSunk ? Color.FromArgb("#ff8a6b") : Color.FromArgb("#8bd0ff");
+
+    public FleetRecapItemVm(string name, string imageSource, bool isSunk, string statusText)
+    {
+        Name = name;
+        ImageSource = imageSource;
+        IsSunk = isSunk;
+        StatusText = statusText;
     }
 }
 

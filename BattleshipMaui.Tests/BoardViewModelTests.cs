@@ -24,6 +24,8 @@ public class BoardViewModelTests
         Assert.Equal(0, vm.CurrentGameShots);
         Assert.Equal(0, vm.CurrentGameHits);
         Assert.Contains("No completed games yet.", vm.LastGameSummary);
+        Assert.True(vm.IsOverlayVisible);
+        Assert.Equal("Deploy Fleet", vm.OverlayPrimaryActionText);
         Assert.Equal("Placement phase", vm.TurnMessage);
         Assert.Contains("Selected ship:", vm.PlacementSelectionMessage);
     }
@@ -52,6 +54,32 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void Constructor_LoadsPersistedSettings()
+    {
+        var statsStore = new InMemoryGameStatsStore();
+        var settingsStore = new InMemoryGameSettingsStore(new GameSettingsSnapshot(
+            Difficulty: CpuDifficulty.Hard,
+            AnimationSpeed: AnimationSpeed.Fast,
+            SoundEnabled: false,
+            HapticsEnabled: false,
+            HighContrastMode: true,
+            LargeTextMode: true,
+            ReduceMotionMode: true,
+            SettingsPanelOpen: false));
+
+        var vm = new BoardViewModel(new Random(10), statsStore, settingsStore, new NoOpFeedbackService());
+
+        Assert.Equal(CpuDifficulty.Hard, vm.SelectedDifficulty);
+        Assert.Equal(AnimationSpeed.Fast, vm.SelectedAnimationSpeed);
+        Assert.False(vm.SoundEnabled);
+        Assert.False(vm.HapticsEnabled);
+        Assert.True(vm.HighContrastMode);
+        Assert.True(vm.LargeTextMode);
+        Assert.True(vm.ReduceMotionMode);
+        Assert.False(vm.IsSettingsOpen);
+    }
+
+    [Fact]
     public void EnemyCellTappedCommand_BeforePlacement_ShowsPlacementPrompt()
     {
         var vm = new BoardViewModel(new Random(11));
@@ -61,6 +89,17 @@ public class BoardViewModelTests
 
         Assert.Equal("Place all ships on Your Fleet board before firing.", vm.StatusMessage);
         Assert.Equal(ShotMarkerState.None, target.MarkerState);
+    }
+
+    [Fact]
+    public void DismissOverlayCommand_HidesOverlay()
+    {
+        var vm = new BoardViewModel(new Random(12));
+        Assert.True(vm.IsOverlayVisible);
+
+        vm.DismissOverlayCommand.Execute(null);
+
+        Assert.False(vm.IsOverlayVisible);
     }
 
     [Fact]
@@ -200,6 +239,8 @@ public class BoardViewModelTests
         int totalOutcomes = vm.Wins + vm.Losses + vm.Draws;
         Assert.Equal(1, totalOutcomes);
         Assert.DoesNotContain("No completed games yet.", vm.LastGameSummary);
+        Assert.Contains("Accuracy by phase:", vm.AnalyticsAccuracyByPhase);
+        Assert.Contains("Streaks:", vm.AnalyticsStreaks);
         Assert.Equal(totalOutcomes, store.Snapshot.Wins + store.Snapshot.Losses + store.Snapshot.Draws);
     }
 
@@ -300,6 +341,35 @@ public class BoardViewModelTests
         {
             Snapshot = snapshot;
             SaveCount++;
+        }
+    }
+
+    private sealed class InMemoryGameSettingsStore : IGameSettingsStore
+    {
+        public GameSettingsSnapshot Snapshot { get; private set; }
+        public int SaveCount { get; private set; }
+
+        public InMemoryGameSettingsStore(GameSettingsSnapshot snapshot)
+        {
+            Snapshot = snapshot;
+        }
+
+        public GameSettingsSnapshot Load()
+        {
+            return Snapshot;
+        }
+
+        public void Save(GameSettingsSnapshot settings)
+        {
+            Snapshot = settings;
+            SaveCount++;
+        }
+    }
+
+    private sealed class NoOpFeedbackService : IGameFeedbackService
+    {
+        public void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion)
+        {
         }
     }
 }

@@ -73,12 +73,20 @@ public sealed class ShipSpriteAnimationBehavior : Behavior<VisualElement>
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
         {
+            if (AnimationRuntimeSettings.ReduceMotion)
+            {
+                view.Opacity = sprite.Opacity;
+                view.Scale = 1;
+                return;
+            }
+
             view.Opacity = 0;
             view.Scale = 0.88;
 
+            uint duration = ScaleDuration(260);
             await Task.WhenAll(
-                view.FadeToAsync(sprite.Opacity, 260, Easing.CubicOut),
-                view.ScaleToAsync(1, 260, Easing.CubicOut));
+                view.FadeToAsync(sprite.Opacity, duration, Easing.CubicOut),
+                view.ScaleToAsync(1, duration, Easing.CubicOut));
         });
     }
 
@@ -86,14 +94,28 @@ public sealed class ShipSpriteAnimationBehavior : Behavior<VisualElement>
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
         {
-            await view.ScaleToAsync(1.08, 120, Easing.CubicOut);
-            await view.ScaleToAsync(0.95, 120, Easing.CubicIn);
-            await view.ScaleToAsync(1.0, 120, Easing.CubicOut);
+            if (AnimationRuntimeSettings.ReduceMotion)
+            {
+                view.Opacity = sprite.Opacity;
+                view.Scale = 1;
+                view.TranslationX = 0;
+                return;
+            }
 
-            await view.TranslateToAsync(-2, 0, 45, Easing.Linear);
-            await view.TranslateToAsync(2, 0, 45, Easing.Linear);
-            await view.TranslateToAsync(0, 0, 45, Easing.Linear);
-            await view.FadeToAsync(sprite.Opacity, 220, Easing.CubicOut);
+            await view.ScaleToAsync(1.08, ScaleDuration(120), Easing.CubicOut);
+            await view.ScaleToAsync(0.95, ScaleDuration(120), Easing.CubicIn);
+            await view.ScaleToAsync(1.0, ScaleDuration(120), Easing.CubicOut);
+
+            await view.TranslateToAsync(-2, 0, ScaleDuration(45), Easing.Linear);
+            await view.TranslateToAsync(2, 0, ScaleDuration(45), Easing.Linear);
+            await view.TranslateToAsync(0, 0, ScaleDuration(45), Easing.Linear);
+            await view.FadeToAsync(sprite.Opacity, ScaleDuration(220), Easing.CubicOut);
         });
+    }
+
+    private static uint ScaleDuration(uint baseDuration)
+    {
+        double scaled = baseDuration * AnimationRuntimeSettings.SpeedMultiplier;
+        return (uint)Math.Clamp((int)scaled, 30, 2000);
     }
 }

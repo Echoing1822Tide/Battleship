@@ -41,4 +41,33 @@
     <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+
+    <!-- Battleship visual tokens -->
+    <Color x:Key="GameColorBackground">#0b1118</Color>
+    <Color x:Key="GameColorSurface">#0f1823</Color>
+    <Color x:Key="GameColorSurfaceAlt">#152334</Color>
+    <Color x:Key="GameColorPanel">#13211b</Color>
+    <Color x:Key="GameColorBorder">#314052</Color>
+    <Color x:Key="GameColorAccent">#4cb5ff</Color>
+    <Color x:Key="GameColorAccentSoft">#2f84bf</Color>
+    <Color x:Key="GameColorTextPrimary">#e5eef8</Color>
+    <Color x:Key="GameColorTextSecondary">#ccd7e5</Color>
+    <Color x:Key="GameColorTextMuted">#9fb6cc</Color>
+    <Color x:Key="GameColorSuccess">#7fe3ab</Color>
+    <Color x:Key="GameColorWarning">#f8dca1</Color>
+    <Color x:Key="GameColorDanger">#ff8a6b</Color>
+
+    <SolidColorBrush x:Key="GameBrushBackground" Color="{DynamicResource GameColorBackground}"/>
+    <SolidColorBrush x:Key="GameBrushSurface" Color="{DynamicResource GameColorSurface}"/>
+    <SolidColorBrush x:Key="GameBrushSurfaceAlt" Color="{DynamicResource GameColorSurfaceAlt}"/>
+    <SolidColorBrush x:Key="GameBrushPanel" Color="{DynamicResource GameColorPanel}"/>
+    <SolidColorBrush x:Key="GameBrushBorder" Color="{DynamicResource GameColorBorder}"/>
+    <SolidColorBrush x:Key="GameBrushAccent" Color="{DynamicResource GameColorAccent}"/>
+    <SolidColorBrush x:Key="GameBrushAccentSoft" Color="{DynamicResource GameColorAccentSoft}"/>
+    <SolidColorBrush x:Key="GameBrushTextPrimary" Color="{DynamicResource GameColorTextPrimary}"/>
+    <SolidColorBrush x:Key="GameBrushTextSecondary" Color="{DynamicResource GameColorTextSecondary}"/>
+    <SolidColorBrush x:Key="GameBrushTextMuted" Color="{DynamicResource GameColorTextMuted}"/>
+    <SolidColorBrush x:Key="GameBrushSuccess" Color="{DynamicResource GameColorSuccess}"/>
+    <SolidColorBrush x:Key="GameBrushWarning" Color="{DynamicResource GameColorWarning}"/>
+    <SolidColorBrush x:Key="GameBrushDanger" Color="{DynamicResource GameColorDanger}"/>
 </ResourceDictionary>
