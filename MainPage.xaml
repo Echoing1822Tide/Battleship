@@ -3,6 +3,7 @@
     x:Class="BattleshipMaui.MainPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:behaviors="clr-namespace:BattleshipMaui.Behaviors"
     xmlns:vm="clr-namespace:BattleshipMaui.ViewModels"
     BackgroundColor="#0b1118">
 
@@ -31,9 +32,110 @@
                    TextColor="#dbe5f2"
                    LineBreakMode="WordWrap" />
 
-            <Button Text="New Game"
-                    Command="{Binding NewGameCommand}"
-                    HorizontalOptions="Start" />
+            <Label Text="{Binding PlayerLastShotMessage}"
+                   FontSize="13"
+                   TextColor="#9fd3ff"
+                   LineBreakMode="WordWrap" />
+
+            <Label Text="{Binding EnemyLastShotMessage}"
+                   FontSize="13"
+                   TextColor="#ffc89a"
+                   LineBreakMode="WordWrap" />
+
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="New Game"
+                        Command="{Binding NewGameCommand}"
+                        SemanticProperties.Description="Start a new game"
+                        SemanticProperties.Hint="Resets the boards and begins ship placement."
+                        HorizontalOptions="Start" />
+                <Button Text="Reset Stats"
+                        Command="{Binding ResetStatsCommand}"
+                        SemanticProperties.Description="Reset saved stats"
+                        SemanticProperties.Hint="Clears wins, losses, turns, shots, and hit rate history."
+                        HorizontalOptions="Start" />
+            </HorizontalStackLayout>
+
+            <Border Stroke="#3a5a48"
+                    StrokeThickness="1"
+                    BackgroundColor="#13211b"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="10,8">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Stats"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           TextColor="#d7f5e5" />
+                    <Label Text="{Binding StatsLine}"
+                           FontSize="13"
+                           TextColor="#b8e2c4"
+                           LineBreakMode="WordWrap" />
+                    <Label Text="{Binding CurrentGameStatsLine}"
+                           FontSize="13"
+                           TextColor="#a7d8f0"
+                           LineBreakMode="WordWrap" />
+                    <Label Text="{Binding LastGameSummary}"
+                           FontSize="13"
+                           TextColor="#f8dca1"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+
+            <VerticalStackLayout IsVisible="{Binding IsPlacementPhase}" Spacing="8">
+                <Label Text="Place Your Fleet"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="#f4e4b8"
+                       Margin="0,8,0,0" />
+
+                <Label Text="{Binding PlacementSelectionMessage}"
+                       FontSize="13"
+                       TextColor="#f8dca1"
+                       LineBreakMode="WordWrap" />
+
+                <Button Text="{Binding PlacementOrientationText}"
+                        Command="{Binding RotatePlacementCommand}"
+                        IsEnabled="{Binding CanRotatePlacement}"
+                        SemanticProperties.Description="Rotate selected ship"
+                        SemanticProperties.Hint="Switches between horizontal and vertical placement."
+                        HorizontalOptions="Start" />
+
+                <CollectionView ItemsSource="{Binding PlacementShips}"
+                                SelectionMode="None"
+                                HeightRequest="84">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border BackgroundColor="{Binding CardBackground}"
+                                    Stroke="{Binding CardStroke}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 6"
+                                    Padding="8,6"
+                                    WidthRequest="155">
+                                <Grid RowDefinitions="Auto,Auto"
+                                      ColumnDefinitions="*">
+                                    <Label Text="{Binding DisplayName}"
+                                           FontSize="12"
+                                           TextColor="White"
+                                           LineBreakMode="TailTruncation" />
+                                    <Image Grid.Row="1"
+                                           Source="{Binding ImageSource}"
+                                           HeightRequest="28"
+                                           Aspect="AspectFit" />
+
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=SelectPlacementShipCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid.GestureRecognizers>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
 
             <Label Text="Enemy Waters"
                    FontSize="16"
@@ -45,39 +147,111 @@
                     StrokeThickness="2"
                     BackgroundColor="#0f1823"
                     Padding="2">
-                <Grid WidthRequest="{Binding BoardPixelSize}"
-                      HeightRequest="{Binding BoardPixelSize}">
-                    <CollectionView ItemsSource="{Binding EnemyCells}"
-                                    SelectionMode="None">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout Orientation="Vertical" Span="10" />
-                        </CollectionView.ItemsLayout>
-
-                        <CollectionView.ItemTemplate>
+                <Grid RowDefinitions="Auto,*"
+                      ColumnDefinitions="Auto,*"
+                      RowSpacing="4"
+                      ColumnSpacing="4">
+                    <HorizontalStackLayout Grid.Row="0"
+                                           Grid.Column="1"
+                                           BindableLayout.ItemsSource="{Binding ColumnLabels}"
+                                           Spacing="0"
+                                           InputTransparent="True"
+                                           WidthRequest="{Binding BoardPixelSize}">
+                        <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border Stroke="#32465f"
-                                        StrokeThickness="1"
-                                        BackgroundColor="#152334">
-                                    <Grid>
-                                        <Image Source="{Binding MarkerImage}"
-                                               Aspect="AspectFill"
-                                               Opacity="0.86" />
-                                        <Label Text="{Binding MarkerText}"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center"
-                                               TextColor="{Binding MarkerColor}"
-                                               FontSize="18"
-                                               FontAttributes="Bold" />
-                                        <Grid.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=EnemyCellTappedCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </Grid.GestureRecognizers>
-                                    </Grid>
-                                </Border>
+                                <Label Text="{Binding .}"
+                                       WidthRequest="32"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="#9fb6cc"
+                                       FontSize="12" />
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+
+                    <VerticalStackLayout Grid.Row="1"
+                                         Grid.Column="0"
+                                         BindableLayout.ItemsSource="{Binding RowLabels}"
+                                         Spacing="0"
+                                         InputTransparent="True"
+                                         HeightRequest="{Binding BoardPixelSize}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Label Text="{Binding .}"
+                                       HeightRequest="32"
+                                       VerticalTextAlignment="Center"
+                                       TextColor="#9fb6cc"
+                                       FontSize="12" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <Grid Grid.Row="1"
+                          Grid.Column="1"
+                          WidthRequest="{Binding BoardPixelSize}"
+                          HeightRequest="{Binding BoardPixelSize}">
+                        <AbsoluteLayout InputTransparent="True"
+                                        BindableLayout.ItemsSource="{Binding EnemyShipSprites}"
+                                        IsVisible="{Binding ShowEnemyFleet}"
+                                        ZIndex="1">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border AbsoluteLayout.LayoutBounds="{Binding Bounds}"
+                                            AbsoluteLayout.LayoutFlags="None"
+                                            Stroke="{Binding StrokeColor}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 3"
+                                            Padding="0"
+                                            BackgroundColor="{Binding BackgroundColor}">
+                                        <Border.Behaviors>
+                                            <behaviors:ShipSpriteAnimationBehavior />
+                                        </Border.Behaviors>
+                                        <Image Source="{Binding ImageSource}"
+                                               Rotation="{Binding Rotation}"
+                                               Aspect="AspectFill"
+                                               Opacity="{Binding Opacity}" />
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </AbsoluteLayout>
+
+                        <CollectionView ItemsSource="{Binding EnemyCells}"
+                                        SelectionMode="None"
+                                        IsEnabled="{Binding CanFire}"
+                                        ZIndex="2"
+                                        SemanticProperties.Description="Enemy waters grid."
+                                        SemanticProperties.Hint="Rows are A to J and columns are 1 to 10. Double tap a cell to fire.">
+                            <CollectionView.ItemsLayout>
+                                <GridItemsLayout Orientation="Vertical" Span="10" />
+                            </CollectionView.ItemsLayout>
+
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#32465f"
+                                            StrokeThickness="1"
+                                            BackgroundColor="#152334"
+                                            SemanticProperties.Description="{Binding AccessibilityText}"
+                                            SemanticProperties.Hint="Enemy cell. Double tap to fire.">
+                                        <Grid>
+                                            <Image Source="{Binding MarkerImage}"
+                                                   Aspect="AspectFill"
+                                                   Opacity="0.86" />
+                                            <Label Text="{Binding MarkerText}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   TextColor="{Binding MarkerColor}"
+                                                   FontSize="18"
+                                                   FontAttributes="Bold" />
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=EnemyCellTappedCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
                 </Grid>
             </Border>
 
@@ -91,56 +265,111 @@
                     StrokeThickness="2"
                     BackgroundColor="#0f1823"
                     Padding="2">
-                <Grid WidthRequest="{Binding BoardPixelSize}"
-                      HeightRequest="{Binding BoardPixelSize}">
-                    <AbsoluteLayout InputTransparent="True"
-                                    BindableLayout.ItemsSource="{Binding PlayerShipSprites}"
-                                    ZIndex="1">
+                <Grid RowDefinitions="Auto,*"
+                      ColumnDefinitions="Auto,*"
+                      RowSpacing="4"
+                      ColumnSpacing="4">
+                    <HorizontalStackLayout Grid.Row="0"
+                                           Grid.Column="1"
+                                           BindableLayout.ItemsSource="{Binding ColumnLabels}"
+                                           Spacing="0"
+                                           InputTransparent="True"
+                                           WidthRequest="{Binding BoardPixelSize}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border AbsoluteLayout.LayoutBounds="{Binding Bounds}"
-                                        AbsoluteLayout.LayoutFlags="None"
-                                        Stroke="#70839a"
-                                        StrokeThickness="1"
-                                        StrokeShape="RoundRectangle 3"
-                                        Padding="0"
-                                        BackgroundColor="#1d2734">
-                                    <Image Source="{Binding ImageSource}"
-                                           Aspect="AspectFill"
-                                           Opacity="{Binding Opacity}" />
-                                </Border>
+                                <Label Text="{Binding .}"
+                                       WidthRequest="32"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="#9fb6cc"
+                                       FontSize="12" />
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
-                    </AbsoluteLayout>
+                    </HorizontalStackLayout>
 
-                    <CollectionView ItemsSource="{Binding PlayerCells}"
-                                    SelectionMode="None"
-                                    InputTransparent="True"
-                                    ZIndex="2">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout Orientation="Vertical" Span="10" />
-                        </CollectionView.ItemsLayout>
-
-                        <CollectionView.ItemTemplate>
+                    <VerticalStackLayout Grid.Row="1"
+                                         Grid.Column="0"
+                                         BindableLayout.ItemsSource="{Binding RowLabels}"
+                                         Spacing="0"
+                                         InputTransparent="True"
+                                         HeightRequest="{Binding BoardPixelSize}">
+                        <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border Stroke="#32465f"
-                                        StrokeThickness="1"
-                                        BackgroundColor="#00000000">
-                                    <Grid>
-                                        <Image Source="{Binding MarkerImage}"
-                                               Aspect="AspectFill"
-                                               Opacity="0.86" />
-                                        <Label Text="{Binding MarkerText}"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center"
-                                               TextColor="{Binding MarkerColor}"
-                                               FontSize="18"
-                                               FontAttributes="Bold" />
-                                    </Grid>
-                                </Border>
+                                <Label Text="{Binding .}"
+                                       HeightRequest="32"
+                                       VerticalTextAlignment="Center"
+                                       TextColor="#9fb6cc"
+                                       FontSize="12" />
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <Grid Grid.Row="1"
+                          Grid.Column="1"
+                          WidthRequest="{Binding BoardPixelSize}"
+                          HeightRequest="{Binding BoardPixelSize}">
+                        <AbsoluteLayout InputTransparent="True"
+                                        BindableLayout.ItemsSource="{Binding PlayerShipSprites}"
+                                        ZIndex="1">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border AbsoluteLayout.LayoutBounds="{Binding Bounds}"
+                                            AbsoluteLayout.LayoutFlags="None"
+                                            Stroke="{Binding StrokeColor}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 3"
+                                            Padding="0"
+                                            BackgroundColor="{Binding BackgroundColor}">
+                                        <Border.Behaviors>
+                                            <behaviors:ShipSpriteAnimationBehavior />
+                                        </Border.Behaviors>
+                                        <Image Source="{Binding ImageSource}"
+                                               Rotation="{Binding Rotation}"
+                                               Aspect="AspectFill"
+                                               Opacity="{Binding Opacity}" />
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </AbsoluteLayout>
+
+                        <CollectionView ItemsSource="{Binding PlayerCells}"
+                                        SelectionMode="None"
+                                        IsEnabled="{Binding CanPlaceShips}"
+                                        ZIndex="2"
+                                        SemanticProperties.Description="Your fleet grid."
+                                        SemanticProperties.Hint="Rows are A to J and columns are 1 to 10. During placement, double tap a cell to place the selected ship.">
+                            <CollectionView.ItemsLayout>
+                                <GridItemsLayout Orientation="Vertical" Span="10" />
+                            </CollectionView.ItemsLayout>
+
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#32465f"
+                                            StrokeThickness="1"
+                                            BackgroundColor="#00000000"
+                                            SemanticProperties.Description="{Binding AccessibilityText}"
+                                            SemanticProperties.Hint="Your fleet cell. Double tap to place the selected ship.">
+                                        <Grid>
+                                            <Image Source="{Binding MarkerImage}"
+                                                   Aspect="AspectFill"
+                                                   Opacity="0.86" />
+                                            <Label Text="{Binding MarkerText}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   TextColor="{Binding MarkerColor}"
+                                                   FontSize="18"
+                                                   FontAttributes="Bold" />
+
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=PlayerCellTappedCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
                 </Grid>
             </Border>
         </VerticalStackLayout>

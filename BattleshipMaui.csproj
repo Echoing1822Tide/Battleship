@@ -28,6 +28,7 @@
 
 	<ItemGroup>
 	  <Compile Remove="Battleship.GameCore\**\*.cs" />
+	  <Compile Remove="BattleshipMaui.Tests\**\*.cs" />
 	  <ProjectReference Include="Battleship.GameCore\Battleship.GameCore.csproj" />
 	</ItemGroup>
 

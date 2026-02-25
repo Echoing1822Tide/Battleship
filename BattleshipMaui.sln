@@ -1,19 +1,60 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BattleshipMaui", "BattleshipMaui.csproj", "{5198AC29-4786-86B5-C013-11FDCC0D1257}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BattleshipMaui.Tests", "BattleshipMaui.Tests\BattleshipMaui.Tests.csproj", "{1B005C4E-8D54-47B4-9A55-2904C5FAB290}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Battleship.GameCore", "Battleship.GameCore\Battleship.GameCore.csproj", "{71DC70E9-DA1B-4196-8C29-F6C486B37833}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|x64.Build.0 = Debug|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Debug|x86.Build.0 = Debug|Any CPU
 		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|x64.ActiveCfg = Release|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|x64.Build.0 = Release|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|x86.ActiveCfg = Release|Any CPU
+		{5198AC29-4786-86B5-C013-11FDCC0D1257}.Release|x86.Build.0 = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|x64.Build.0 = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Debug|x86.Build.0 = Debug|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|x64.ActiveCfg = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|x64.Build.0 = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|x86.ActiveCfg = Release|Any CPU
+		{1B005C4E-8D54-47B4-9A55-2904C5FAB290}.Release|x86.Build.0 = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|x64.Build.0 = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Debug|x86.Build.0 = Debug|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|x64.ActiveCfg = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|x64.Build.0 = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|x86.ActiveCfg = Release|Any CPU
+		{71DC70E9-DA1B-4196-8C29-F6C486B37833}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

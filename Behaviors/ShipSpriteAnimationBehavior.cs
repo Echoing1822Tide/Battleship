@@ -1,0 +1,99 @@
+using System.ComponentModel;
+using BattleshipMaui.ViewModels;
+using Microsoft.Maui.ApplicationModel;
+
+namespace BattleshipMaui.Behaviors;
+
+public sealed class ShipSpriteAnimationBehavior : Behavior<VisualElement>
+{
+    private VisualElement? _associatedObject;
+    private ShipSpriteVm? _sprite;
+
+    protected override void OnAttachedTo(VisualElement bindable)
+    {
+        base.OnAttachedTo(bindable);
+        _associatedObject = bindable;
+        bindable.BindingContextChanged += OnBindingContextChanged;
+        AttachToSprite(bindable.BindingContext as ShipSpriteVm);
+    }
+
+    protected override void OnDetachingFrom(VisualElement bindable)
+    {
+        bindable.BindingContextChanged -= OnBindingContextChanged;
+        AttachToSprite(null);
+        _associatedObject = null;
+        base.OnDetachingFrom(bindable);
+    }
+
+    private void OnBindingContextChanged(object? sender, EventArgs e)
+    {
+        if (sender is not VisualElement element)
+            return;
+
+        AttachToSprite(element.BindingContext as ShipSpriteVm);
+    }
+
+    private void AttachToSprite(ShipSpriteVm? sprite)
+    {
+        if (_sprite is not null)
+            _sprite.PropertyChanged -= OnSpritePropertyChanged;
+
+        _sprite = sprite;
+
+        if (_sprite is null || _associatedObject is null)
+            return;
+
+        _associatedObject.Opacity = _sprite.Opacity;
+        _associatedObject.Scale = 1;
+        _associatedObject.TranslationX = 0;
+
+        _sprite.PropertyChanged += OnSpritePropertyChanged;
+    }
+
+    private async void OnSpritePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        var view = _associatedObject;
+        var sprite = _sprite;
+        if (view is null || sprite is null)
+            return;
+
+        if (e.PropertyName == nameof(ShipSpriteVm.IsRevealed) && sprite.IsRevealed)
+        {
+            await RunRevealAnimationAsync(view, sprite).ConfigureAwait(false);
+            if (sprite.IsSunk)
+                await RunSunkAnimationAsync(view, sprite).ConfigureAwait(false);
+            return;
+        }
+
+        if (e.PropertyName == nameof(ShipSpriteVm.IsSunk) && sprite.IsSunk)
+            await RunSunkAnimationAsync(view, sprite).ConfigureAwait(false);
+    }
+
+    private static async Task RunRevealAnimationAsync(VisualElement view, ShipSpriteVm sprite)
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            view.Opacity = 0;
+            view.Scale = 0.88;
+
+            await Task.WhenAll(
+                view.FadeToAsync(sprite.Opacity, 260, Easing.CubicOut),
+                view.ScaleToAsync(1, 260, Easing.CubicOut));
+        });
+    }
+
+    private static async Task RunSunkAnimationAsync(VisualElement view, ShipSpriteVm sprite)
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            await view.ScaleToAsync(1.08, 120, Easing.CubicOut);
+            await view.ScaleToAsync(0.95, 120, Easing.CubicIn);
+            await view.ScaleToAsync(1.0, 120, Easing.CubicOut);
+
+            await view.TranslateToAsync(-2, 0, 45, Easing.Linear);
+            await view.TranslateToAsync(2, 0, 45, Easing.Linear);
+            await view.TranslateToAsync(0, 0, 45, Easing.Linear);
+            await view.FadeToAsync(sprite.Opacity, 220, Easing.CubicOut);
+        });
+    }
+}

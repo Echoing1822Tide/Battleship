@@ -50,7 +50,7 @@ public sealed class GameBoard
     public bool IsAlreadyAttacked(int row, int col)
     {
         if (!InBounds(row, col)) return true;
-        return Cells[row, col].State != CellState.Empty;
+        return Cells[row, col].HasBeenAttacked;
     }
 
     public bool TryPlaceShip(Ship ship, int startRow, int startCol, ShipOrientation orientation)
@@ -76,6 +76,7 @@ public sealed class GameBoard
         foreach (var (r, c) in coords)
         {
             Cells[r, c].Ship = ship;
+            Cells[r, c].State = CellState.Ship;
 
             if (!ship.TryAddPosition(r, c))
                 return false;
@@ -92,7 +93,7 @@ public sealed class GameBoard
 
         var cell = Cells[row, col];
 
-        if (cell.State != CellState.Empty)
+        if (cell.HasBeenAttacked)
             return new ShotInfo(row, col, AttackResult.AlreadyTried, false, null, "Already attacked.");
 
         if (cell.Ship is not null)
