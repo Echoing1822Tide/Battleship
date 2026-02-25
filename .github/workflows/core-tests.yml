@@ -1,13 +1,14 @@
-name: CI
+name: Core CI (9 tests)
 
 on:
   push:
     branches:
-      - '**'
+      - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  test:
+  core9-tests:
     runs-on: windows-latest
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -20,7 +21,7 @@ jobs:
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: 10.0.x
           include-prerelease: true
 
       - name: Install MAUI workload
