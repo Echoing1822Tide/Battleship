@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Windows-only while we stabilize -->
+		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+
+		<!-- MAUI essentials -->
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+
+		<!-- Make it a GUI app (no console window) -->
+		<OutputType>WinExe</OutputType>
+
+		<!-- Unpackaged = fewer WinAppSDK surprises for local runs -->
+		<WindowsPackageType>None</WindowsPackageType>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- MAUI Controls reference required with .NET 8+ behavior -->
+		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.1" />
+
+		<!-- Enables builder.Logging.AddDebug() -->
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Battleship.GameCore\**\*.cs" />
+	  <ProjectReference Include="Battleship.GameCore\Battleship.GameCore.csproj" />
+	</ItemGroup>
+
+</Project>
