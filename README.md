@@ -75,7 +75,7 @@ dotnet test BattleshipMaui.Tests/BattleshipMaui.Tests.csproj --filter "Category=
 ```
 
 ## CI
-GitHub Actions workflow: `.github/workflows/ci.yml`
+GitHub Actions workflow: `.github/workflows/core-tests.yml`
 - Triggers on every push and PR.
 - Runs the 9 tagged core tests (`Category=Core9`) on Windows.
 

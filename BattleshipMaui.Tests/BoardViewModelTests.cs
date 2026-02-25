@@ -280,7 +280,7 @@ public class BoardViewModelTests
     {
         var sprite = new ShipSpriteVm(
             "Destroyer",
-            "Destroyer_2_Pegs.png",
+            "destroyer_2_pegs.png",
             startRow: 3,
             startCol: 4,
             length: 2,

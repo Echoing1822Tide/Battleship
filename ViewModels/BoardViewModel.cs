@@ -68,11 +68,11 @@ public class BoardViewModel : ObservableObject
 
     private static readonly ShipTemplate[] FleetTemplates =
     {
-        new("Aircraft Carrier", 5, "Aircraft_Carrier_5_Pegs.png"),
-        new("Battleship", 4, "Battleship_4_Pegs.png"),
-        new("Cruiser", 3, "Cruiser_3_Pegs.png"),
-        new("Submarine", 3, "Submarine_3_Pegs.png"),
-        new("Destroyer", 2, "Destroyer_2_Pegs.png")
+        new("Aircraft Carrier", 5, "aircraft_carrier_5_pegs.png"),
+        new("Battleship", 4, "battleship_4_pegs.png"),
+        new("Cruiser", 3, "cruiser_3_pegs.png"),
+        new("Submarine", 3, "submarine_3_pegs.png"),
+        new("Destroyer", 2, "destroyer_2_pegs.png")
     };
 
     public double BoardPixelSize => Size * CellSize;
@@ -1504,7 +1504,7 @@ public class BoardCellVm : ObservableObject
     public string MarkerText => MarkerState switch
     {
         ShotMarkerState.Miss => "•",
-        ShotMarkerState.Hit => "X",
+        ShotMarkerState.Hit => string.Empty,
         _ => string.Empty
     };
 
@@ -1515,7 +1515,7 @@ public class BoardCellVm : ObservableObject
         _ => Colors.Transparent
     };
 
-    public string? MarkerImage => MarkerState == ShotMarkerState.Hit ? "Explosion.png" : null;
+    public string? MarkerImage => MarkerState == ShotMarkerState.Hit ? "explosion.png" : null;
 
     public string MarkerStateText => MarkerState switch
     {

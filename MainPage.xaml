@@ -169,6 +169,7 @@
                                                BindableLayout.ItemsSource="{Binding ColumnLabels}"
                                                Spacing="0"
                                                InputTransparent="True"
+                                               HorizontalOptions="Start"
                                                WidthRequest="{Binding BoardPixelSize}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate>
@@ -201,7 +202,9 @@
                         <Grid Grid.Row="1"
                               Grid.Column="1"
                               WidthRequest="{Binding BoardPixelSize}"
-                              HeightRequest="{Binding BoardPixelSize}">
+                              HeightRequest="{Binding BoardPixelSize}"
+                              HorizontalOptions="Start"
+                              VerticalOptions="Start">
                             <AbsoluteLayout InputTransparent="True"
                                             BindableLayout.ItemsSource="{Binding EnemyShipSprites}"
                                             IsVisible="{Binding ShowEnemyFleet}"
@@ -230,6 +233,10 @@
                             <CollectionView ItemsSource="{Binding EnemyCells}"
                                             SelectionMode="None"
                                             IsEnabled="{Binding CanFire}"
+                                            WidthRequest="{Binding BoardPixelSize}"
+                                            HeightRequest="{Binding BoardPixelSize}"
+                                            VerticalScrollBarVisibility="Never"
+                                            HorizontalScrollBarVisibility="Never"
                                             ZIndex="2"
                                             SemanticProperties.Description="Enemy waters grid."
                                             SemanticProperties.Hint="Rows are A to J and columns are 1 to 10. Double tap a cell to fire.">
@@ -242,6 +249,8 @@
                                         <Border Stroke="{DynamicResource GameColorBorder}"
                                                 StrokeThickness="1"
                                                 BackgroundColor="{DynamicResource GameColorSurfaceAlt}"
+                                                WidthRequest="32"
+                                                HeightRequest="32"
                                                 SemanticProperties.Description="{Binding AccessibilityText}"
                                                 SemanticProperties.Hint="Enemy cell. Double tap to fire.">
                                             <Grid>
@@ -278,6 +287,7 @@
                                                BindableLayout.ItemsSource="{Binding ColumnLabels}"
                                                Spacing="0"
                                                InputTransparent="True"
+                                               HorizontalOptions="Start"
                                                WidthRequest="{Binding BoardPixelSize}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate>
@@ -310,7 +320,9 @@
                         <Grid Grid.Row="1"
                               Grid.Column="1"
                               WidthRequest="{Binding BoardPixelSize}"
-                              HeightRequest="{Binding BoardPixelSize}">
+                              HeightRequest="{Binding BoardPixelSize}"
+                              HorizontalOptions="Start"
+                              VerticalOptions="Start">
                             <AbsoluteLayout InputTransparent="True"
                                             BindableLayout.ItemsSource="{Binding PlayerShipSprites}"
                                             ZIndex="1">
@@ -338,6 +350,10 @@
                             <CollectionView ItemsSource="{Binding PlayerCells}"
                                             SelectionMode="None"
                                             IsEnabled="{Binding CanPlaceShips}"
+                                            WidthRequest="{Binding BoardPixelSize}"
+                                            HeightRequest="{Binding BoardPixelSize}"
+                                            VerticalScrollBarVisibility="Never"
+                                            HorizontalScrollBarVisibility="Never"
                                             ZIndex="2"
                                             SemanticProperties.Description="Your fleet grid."
                                             SemanticProperties.Hint="Rows are A to J and columns are 1 to 10. During placement, double tap a cell to place the selected ship.">
@@ -350,6 +366,8 @@
                                         <Border Stroke="{DynamicResource GameColorBorder}"
                                                 StrokeThickness="1"
                                                 BackgroundColor="#00000000"
+                                                WidthRequest="32"
+                                                HeightRequest="32"
                                                 SemanticProperties.Description="{Binding AccessibilityText}"
                                                 SemanticProperties.Hint="Your fleet cell. Double tap to place the selected ship.">
                                             <Grid>
