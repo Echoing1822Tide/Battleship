@@ -28,7 +28,7 @@ jobs:
         run: dotnet workload install maui --skip-sign-check
 
       - name: Restore
-        run: dotnet restore BattleshipMaui.sln
+        run: dotnet restore BattleshipMaui.sln -r win-x64
 
       - name: Run core CI tests (exactly 9)
         run: dotnet test BattleshipMaui.Tests/BattleshipMaui.Tests.csproj --configuration Release --no-restore --filter "Category=Core9"
