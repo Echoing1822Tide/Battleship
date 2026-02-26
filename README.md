@@ -2,9 +2,15 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/Framework-.NET%20MAUI-0f6cbd)](https://learn.microsoft.com/dotnet/maui/)
+[![Release](https://img.shields.io/badge/Release-v1.2.0-2ea44f)](#versioning--releases)
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE.md)
 
 A polished, fully playable Battleship game built with .NET MAUI and a C# game core.
+
+## Versioning & Releases
+- Current public app release version: `v1.2.0`
+- Release history and iteration details: [CHANGELOG.md](./CHANGELOG.md)
+- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.2.0`)
 
 ## Highlights
 - Manual fleet placement (tap-to-place + rotate).

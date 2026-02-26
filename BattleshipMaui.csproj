@@ -16,6 +16,14 @@
 
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+
+		<!-- Public release versioning -->
+		<Version>1.2.0</Version>
+		<AssemblyVersion>1.2.0.0</AssemblyVersion>
+		<FileVersion>1.2.0.0</FileVersion>
+		<InformationalVersion>1.2.0</InformationalVersion>
+		<ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+		<ApplicationVersion>1200</ApplicationVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
