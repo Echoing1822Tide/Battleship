@@ -117,6 +117,20 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void PlayerCellTappedCommand_MarksPlacedCellsAsOccupied()
+    {
+        var vm = new BoardViewModel(new Random(15));
+        var destroyer = vm.PlacementShips.Single(ship => ship.Name == "Destroyer");
+        vm.SelectPlacementShipCommand.Execute(destroyer);
+
+        vm.PlayerCellTappedCommand.Execute(vm.PlayerCells[0]);
+
+        Assert.True(vm.PlayerCells[0].HasShip);
+        Assert.True(vm.PlayerCells[1].HasShip);
+        Assert.False(vm.PlayerCells[2].HasShip);
+    }
+
+    [Fact]
     public void RotatePlacementCommand_PlacesVerticalShip()
     {
         var vm = new BoardViewModel(new Random(17));
@@ -200,6 +214,8 @@ public class BoardViewModelTests
         Assert.All(vm.PlacementShips, s => Assert.False(s.IsPlaced));
         Assert.All(vm.EnemyCells, c => Assert.Equal(ShotMarkerState.None, c.MarkerState));
         Assert.All(vm.PlayerCells, c => Assert.Equal(ShotMarkerState.None, c.MarkerState));
+        Assert.All(vm.EnemyCells, c => Assert.False(c.HasShip));
+        Assert.All(vm.PlayerCells, c => Assert.False(c.HasShip));
         Assert.Equal("Your last shot: --", vm.PlayerLastShotMessage);
         Assert.Equal("Enemy last shot: --", vm.EnemyLastShotMessage);
     }

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Battleship.GameCore;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Graphics;
 
 namespace BattleshipMaui.ViewModels;
@@ -62,9 +63,16 @@ public class BoardViewModel : ObservableObject
     private bool _highContrastMode;
     private bool _largeTextMode;
     private bool _reduceMotionMode;
+    private BoardViewMode _boardViewMode = BoardViewMode.Split;
+    private bool _isTurnTransitionActive;
+    private string _turnTransitionMessage = string.Empty;
+    private bool _isResolvingEnemyTurn;
+    private int _gameSessionId;
 
     public const int Size = 10;
     public const double CellSize = 32;
+    public const double BoardAxisRailSize = 20;
+    public const double BoardRailSpacing = 4;
 
     private static readonly ShipTemplate[] FleetTemplates =
     {
@@ -76,6 +84,7 @@ public class BoardViewModel : ObservableObject
     };
 
     public double BoardPixelSize => Size * CellSize;
+    public double BoardFramePixelSize => BoardPixelSize + BoardAxisRailSize + BoardRailSpacing;
     public IReadOnlyList<string> RowLabels { get; } = Enumerable.Range(0, Size)
         .Select(i => ((char)('A' + i)).ToString())
         .ToArray();
@@ -101,6 +110,7 @@ public class BoardViewModel : ObservableObject
     public ICommand ResetStatsCommand { get; }
     public ICommand ToggleSettingsPanelCommand { get; }
     public ICommand DismissOverlayCommand { get; }
+    public ICommand SetBoardViewModeCommand { get; }
 
     public bool IsPlayerTurn
     {
@@ -486,6 +496,67 @@ public class BoardViewModel : ObservableObject
         }
     }
 
+    public BoardViewMode BoardViewMode
+    {
+        get => _boardViewMode;
+        private set
+        {
+            if (_boardViewMode == value) return;
+            _boardViewMode = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowEnemyBoard));
+            OnPropertyChanged(nameof(ShowPlayerBoard));
+            OnPropertyChanged(nameof(EnemyBoardTabBackground));
+            OnPropertyChanged(nameof(PlayerBoardTabBackground));
+            OnPropertyChanged(nameof(SplitBoardTabBackground));
+            OnPropertyChanged(nameof(BoardFocusSummary));
+        }
+    }
+
+    public bool ShowEnemyBoard => BoardViewMode is BoardViewMode.Enemy or BoardViewMode.Split;
+    public bool ShowPlayerBoard => BoardViewMode is BoardViewMode.Player or BoardViewMode.Split;
+
+    public Color EnemyBoardTabBackground => BoardViewMode == BoardViewMode.Enemy
+        ? Color.FromArgb("#3f8ecd")
+        : Color.FromArgb("#1d3146");
+
+    public Color PlayerBoardTabBackground => BoardViewMode == BoardViewMode.Player
+        ? Color.FromArgb("#3f8ecd")
+        : Color.FromArgb("#1d3146");
+
+    public Color SplitBoardTabBackground => BoardViewMode == BoardViewMode.Split
+        ? Color.FromArgb("#3f8ecd")
+        : Color.FromArgb("#1d3146");
+
+    public string BoardFocusSummary => BoardViewMode switch
+    {
+        BoardViewMode.Enemy => "Focused view: Enemy waters",
+        BoardViewMode.Player => "Focused view: Your fleet",
+        _ => "Focused view: Split"
+    };
+
+    public bool IsTurnTransitionActive
+    {
+        get => _isTurnTransitionActive;
+        private set
+        {
+            if (_isTurnTransitionActive == value) return;
+            _isTurnTransitionActive = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string TurnTransitionMessage
+    {
+        get => _turnTransitionMessage;
+        private set
+        {
+            if (_turnTransitionMessage == value) return;
+            _turnTransitionMessage = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool IsOverlayVisible
     {
         get => _isOverlayVisible;
@@ -627,13 +698,14 @@ public class BoardViewModel : ObservableObject
         ResetStatsCommand = new Command(ResetStats);
         ToggleSettingsPanelCommand = new Command(() => IsSettingsOpen = !IsSettingsOpen);
         DismissOverlayCommand = new Command(DismissOverlay);
+        SetBoardViewModeCommand = new Command<string?>(SetBoardViewModeFromToken);
 
         LoadStats();
         LoadSettings();
         ApplyVisualSettings();
         ApplyAnimationSettings();
-        InitializeCells(EnemyCells);
-        InitializeCells(PlayerCells);
+        InitializeCells(EnemyCells, isPlayerBoard: false);
+        InitializeCells(PlayerCells, isPlayerBoard: true);
         StartNewGame();
     }
 
@@ -718,6 +790,76 @@ public class BoardViewModel : ObservableObject
     {
         AnimationRuntimeSettings.SpeedMultiplier = GetAnimationSpeedMultiplier(SelectedAnimationSpeed);
         AnimationRuntimeSettings.ReduceMotion = ReduceMotionMode;
+    }
+
+    private static int ScalePause(int milliseconds)
+    {
+        double scaled = milliseconds * AnimationRuntimeSettings.SpeedMultiplier;
+        return (int)Math.Clamp(scaled, 40, 1600);
+    }
+
+    private static bool CanUseMainThreadPacing()
+    {
+        try
+        {
+            return MainThread.IsMainThread;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool ShouldUseCinematicTurnPacing => !ReduceMotionMode && CanUseMainThreadPacing();
+
+    private async Task PauseForDramaAsync(int milliseconds, string transitionMessage)
+    {
+        TurnTransitionMessage = transitionMessage;
+        IsTurnTransitionActive = true;
+
+        if (!ShouldUseCinematicTurnPacing)
+            return;
+
+        await Task.Delay(ScalePause(milliseconds));
+    }
+
+    private void ClearTurnTransition()
+    {
+        IsTurnTransitionActive = false;
+        TurnTransitionMessage = string.Empty;
+    }
+
+    private void SetBoardViewMode(BoardViewMode mode)
+    {
+        BoardViewMode = mode;
+    }
+
+    private void SetBoardViewModeFromToken(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return;
+
+        if (!Enum.TryParse(token, ignoreCase: true, out BoardViewMode mode))
+            return;
+
+        SetBoardViewMode(mode);
+    }
+
+    private void ApplyAutoBoardFocus()
+    {
+        if (IsGameOver)
+        {
+            SetBoardViewMode(BoardViewMode.Split);
+            return;
+        }
+
+        if (IsPlacementPhase)
+        {
+            SetBoardViewMode(BoardViewMode.Player);
+            return;
+        }
+
+        SetBoardViewMode(IsPlayerTurn ? BoardViewMode.Enemy : BoardViewMode.Player);
     }
 
     private void EmitFeedback(GameFeedbackCue cue)
@@ -945,8 +1087,8 @@ public class BoardViewModel : ObservableObject
         _playerBoard.SetFleet(playerFleet);
         _enemyBoard.SetFleet(enemyFleet);
 
-        ResetCells(EnemyCells);
-        ResetCells(PlayerCells);
+        ResetCells(EnemyCells, clearShips: true);
+        ResetCells(PlayerCells, clearShips: true);
         PlayerShipSprites.Clear();
         EnemyShipSprites.Clear();
         _playerSpritesByName.Clear();
@@ -961,6 +1103,10 @@ public class BoardViewModel : ObservableObject
         IsVerticalPlacement = false;
         IsPlayerTurn = false;
         ShowEnemyFleet = false;
+        _isResolvingEnemyTurn = false;
+        _gameSessionId++;
+        ClearTurnTransition();
+        SetBoardViewMode(BoardViewMode.Player);
 
         TurnMessage = "Placement phase";
         StatusMessage = "Select a ship and tap Your Fleet board to place it.";
@@ -976,22 +1122,22 @@ public class BoardViewModel : ObservableObject
         OnPropertyChanged(nameof(ScoreLine));
     }
 
-    private static void InitializeCells(ObservableCollection<BoardCellVm> cells)
+    private static void InitializeCells(ObservableCollection<BoardCellVm> cells, bool isPlayerBoard)
     {
         cells.Clear();
         for (int row = 0; row < Size; row++)
         {
             for (int col = 0; col < Size; col++)
             {
-                cells.Add(new BoardCellVm(row, col));
+                cells.Add(new BoardCellVm(row, col, isPlayerBoard));
             }
         }
     }
 
-    private static void ResetCells(ObservableCollection<BoardCellVm> cells)
+    private static void ResetCells(ObservableCollection<BoardCellVm> cells, bool clearShips)
     {
         foreach (var cell in cells)
-            cell.Reset();
+            cell.Reset(clearShips);
     }
 
     private static List<Ship> CreateFleet()
@@ -1083,6 +1229,7 @@ public class BoardViewModel : ObservableObject
 
         _selectedPlacementShip.IsPlaced = true;
         AddPlayerShipSprite(ship, _selectedPlacementShip.ImageSource);
+        ApplyPlayerShipPresence(ship);
         EmitFeedback(GameFeedbackCue.PlaceShip);
 
         var coordinate = ToBoardCoordinate(targetCell.Row, targetCell.Col);
@@ -1105,6 +1252,7 @@ public class BoardViewModel : ObservableObject
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
         StatusMessage = "All ships placed. Tap a cell on Enemy Waters to fire.";
+        ApplyAutoBoardFocus();
         EmitFeedback(GameFeedbackCue.PlacementComplete);
     }
 
@@ -1129,6 +1277,16 @@ public class BoardViewModel : ObservableObject
 
         PlayerShipSprites.Add(sprite);
         _playerSpritesByName[ship.Name] = sprite;
+    }
+
+    private void ApplyPlayerShipPresence(Ship ship)
+    {
+        foreach (var position in ship.Positions)
+        {
+            int index = position.Row * Size + position.Col;
+            if (index >= 0 && index < PlayerCells.Count)
+                PlayerCells[index].SetShipPresence(true);
+        }
     }
 
     private void BuildEnemyShipSprites(IEnumerable<Ship> enemyFleet)
@@ -1271,7 +1429,7 @@ public class BoardViewModel : ObservableObject
             return;
         }
 
-        if (!IsPlayerTurn)
+        if (!IsPlayerTurn || _isResolvingEnemyTurn)
         {
             StatusMessage = "Enemy turn in progress.";
             return;
@@ -1315,13 +1473,49 @@ public class BoardViewModel : ObservableObject
             RecordGameOutcome(GameOutcome.Win);
             EmitFeedback(GameFeedbackCue.Win);
             RevealEnemyFleet();
+            ClearTurnTransition();
+            ApplyAutoBoardFocus();
             ShowGameOverOverlay(GameOutcome.Win);
             return;
         }
 
         IsPlayerTurn = false;
         TurnMessage = "Enemy turn";
+        ApplyAutoBoardFocus();
+
+        if (ShouldUseCinematicTurnPacing)
+        {
+            _ = ResolveEnemyTurnWithPacingAsync(_gameSessionId);
+            return;
+        }
+
         EnemyTakeTurn();
+    }
+
+    private async Task ResolveEnemyTurnWithPacingAsync(int sessionId)
+    {
+        if (_isResolvingEnemyTurn)
+            return;
+
+        _isResolvingEnemyTurn = true;
+        try
+        {
+            await PauseForDramaAsync(460, "Enemy plotting trajectory...");
+
+            if (sessionId != _gameSessionId || IsGameOver)
+                return;
+
+            EnemyTakeTurn();
+
+            if (sessionId == _gameSessionId && !IsGameOver)
+                await PauseForDramaAsync(180, "Telemetry relay complete.");
+        }
+        finally
+        {
+            _isResolvingEnemyTurn = false;
+            if (sessionId == _gameSessionId)
+                ClearTurnTransition();
+        }
     }
 
     private void EnemyTakeTurn()
@@ -1343,6 +1537,7 @@ public class BoardViewModel : ObservableObject
                 RecordGameOutcome(GameOutcome.Draw);
                 EmitFeedback(GameFeedbackCue.Draw);
                 RevealEnemyFleet();
+                ApplyAutoBoardFocus();
                 ShowGameOverOverlay(GameOutcome.Draw);
                 return;
             }
@@ -1380,6 +1575,7 @@ public class BoardViewModel : ObservableObject
                 RecordGameOutcome(GameOutcome.Loss);
                 EmitFeedback(GameFeedbackCue.Loss);
                 RevealEnemyFleet();
+                ApplyAutoBoardFocus();
                 ShowGameOverOverlay(GameOutcome.Loss);
                 return;
             }
@@ -1398,6 +1594,7 @@ public class BoardViewModel : ObservableObject
         TurnMessage = "Your turn";
         EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(lastShot.Row, lastShot.Col)} - {lastShot.Message}";
         StatusMessage = "Tap a cell on Enemy Waters to fire.";
+        ApplyAutoBoardFocus();
     }
 
     private static void ApplyShotResult(ObservableCollection<BoardCellVm> cells, ShotInfo shot)
@@ -1428,6 +1625,13 @@ public enum AnimationSpeed
     Normal = 0,
     Slow = 1,
     Fast = 2
+}
+
+public enum BoardViewMode
+{
+    Enemy = 0,
+    Player = 1,
+    Split = 2
 }
 
 public enum GameFeedbackCue
@@ -1479,9 +1683,11 @@ public enum ShotMarkerState
 public class BoardCellVm : ObservableObject
 {
     private ShotMarkerState _markerState;
+    private bool _hasShip;
 
     public int Row { get; }
     public int Col { get; }
+    public bool IsPlayerBoard { get; }
 
     public ShotMarkerState MarkerState
     {
@@ -1495,6 +1701,22 @@ public class BoardCellVm : ObservableObject
             OnPropertyChanged(nameof(MarkerColor));
             OnPropertyChanged(nameof(MarkerImage));
             OnPropertyChanged(nameof(MarkerStateText));
+            OnPropertyChanged(nameof(CellFillColor));
+            OnPropertyChanged(nameof(CellStrokeColor));
+            OnPropertyChanged(nameof(AccessibilityText));
+        }
+    }
+
+    public bool HasShip
+    {
+        get => _hasShip;
+        private set
+        {
+            if (_hasShip == value) return;
+            _hasShip = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CellFillColor));
+            OnPropertyChanged(nameof(CellStrokeColor));
             OnPropertyChanged(nameof(AccessibilityText));
         }
     }
@@ -1515,6 +1737,22 @@ public class BoardCellVm : ObservableObject
         _ => Colors.Transparent
     };
 
+    public Color CellFillColor => MarkerState switch
+    {
+        ShotMarkerState.Hit => Color.FromArgb("#3b2118"),
+        ShotMarkerState.Miss => IsPlayerBoard ? Color.FromArgb("#183047") : Color.FromArgb("#1b3550"),
+        _ when IsPlayerBoard && HasShip => Color.FromArgb("#2f5f86"),
+        _ => IsPlayerBoard ? Color.FromArgb("#14293d") : Color.FromArgb("#173049")
+    };
+
+    public Color CellStrokeColor => MarkerState switch
+    {
+        ShotMarkerState.Hit => Color.FromArgb("#ff8a6b"),
+        ShotMarkerState.Miss => Color.FromArgb("#55799e"),
+        _ when IsPlayerBoard && HasShip => Color.FromArgb("#9bcdf4"),
+        _ => Color.FromArgb("#4a6785")
+    };
+
     public string? MarkerImage => MarkerState == ShotMarkerState.Hit ? "explosion.png" : null;
 
     public string MarkerStateText => MarkerState switch
@@ -1524,12 +1762,15 @@ public class BoardCellVm : ObservableObject
         _ => "untargeted"
     };
 
-    public string AccessibilityText => $"{CoordinateText}, {MarkerStateText}";
+    public string AccessibilityText => IsPlayerBoard
+        ? $"{CoordinateText}, {(HasShip ? "occupied" : "clear")}, {MarkerStateText}"
+        : $"{CoordinateText}, {MarkerStateText}";
 
-    public BoardCellVm(int row, int col)
+    public BoardCellVm(int row, int col, bool isPlayerBoard)
     {
         Row = row;
         Col = col;
+        IsPlayerBoard = isPlayerBoard;
     }
 
     public void ApplyShot(ShotInfo shot)
@@ -1537,8 +1778,16 @@ public class BoardCellVm : ObservableObject
         MarkerState = shot.IsHit ? ShotMarkerState.Hit : ShotMarkerState.Miss;
     }
 
-    public void Reset()
+    public void SetShipPresence(bool hasShip)
     {
+        HasShip = hasShip;
+    }
+
+    public void Reset(bool clearShips)
+    {
+        if (clearShips)
+            HasShip = false;
+
         MarkerState = ShotMarkerState.None;
     }
 }
@@ -1556,11 +1805,23 @@ public class ShipSpriteVm : ObservableObject
     public ShipAxis Axis { get; }
     public bool IsEnemy { get; }
 
-    public Rect Bounds => new(
-        StartCol * BoardViewModel.CellSize,
-        StartRow * BoardViewModel.CellSize,
-        Axis == ShipAxis.Horizontal ? Length * BoardViewModel.CellSize : BoardViewModel.CellSize,
-        Axis == ShipAxis.Horizontal ? BoardViewModel.CellSize : Length * BoardViewModel.CellSize);
+    public Rect Bounds
+    {
+        get
+        {
+            double cell = BoardViewModel.CellSize;
+            double lengthPixels = Length * cell;
+            if (Axis == ShipAxis.Horizontal)
+                return new Rect(StartCol * cell, StartRow * cell, lengthPixels, cell);
+
+            double offset = (lengthPixels - cell) / 2d;
+            return new Rect(
+                (StartCol * cell) - offset,
+                (StartRow * cell) + offset,
+                lengthPixels,
+                cell);
+        }
+    }
 
     public double Rotation => Axis == ShipAxis.Vertical ? 90 : 0;
 
