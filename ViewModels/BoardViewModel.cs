@@ -63,7 +63,7 @@ public class BoardViewModel : ObservableObject
     private bool _highContrastMode;
     private bool _largeTextMode;
     private bool _reduceMotionMode;
-    private BoardViewMode _boardViewMode = BoardViewMode.Split;
+    private BoardViewMode _boardViewMode = BoardViewMode.Enemy;
     private bool _isTurnTransitionActive;
     private string _turnTransitionMessage = string.Empty;
     private bool _isResolvingEnemyTurn;
@@ -504,17 +504,11 @@ public class BoardViewModel : ObservableObject
             if (_boardViewMode == value) return;
             _boardViewMode = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(ShowEnemyBoard));
-            OnPropertyChanged(nameof(ShowPlayerBoard));
             OnPropertyChanged(nameof(EnemyBoardTabBackground));
             OnPropertyChanged(nameof(PlayerBoardTabBackground));
-            OnPropertyChanged(nameof(SplitBoardTabBackground));
             OnPropertyChanged(nameof(BoardFocusSummary));
         }
     }
-
-    public bool ShowEnemyBoard => BoardViewMode is BoardViewMode.Enemy or BoardViewMode.Split;
-    public bool ShowPlayerBoard => BoardViewMode is BoardViewMode.Player or BoardViewMode.Split;
 
     public Color EnemyBoardTabBackground => BoardViewMode == BoardViewMode.Enemy
         ? Color.FromArgb("#3f8ecd")
@@ -524,15 +518,10 @@ public class BoardViewModel : ObservableObject
         ? Color.FromArgb("#3f8ecd")
         : Color.FromArgb("#1d3146");
 
-    public Color SplitBoardTabBackground => BoardViewMode == BoardViewMode.Split
-        ? Color.FromArgb("#3f8ecd")
-        : Color.FromArgb("#1d3146");
-
     public string BoardFocusSummary => BoardViewMode switch
     {
-        BoardViewMode.Enemy => "Focused view: Enemy waters",
-        BoardViewMode.Player => "Focused view: Your fleet",
-        _ => "Focused view: Split"
+        BoardViewMode.Player => "Command Center: Fleet Ops",
+        _ => "Command Center: Fire Control"
     };
 
     public bool IsTurnTransitionActive
@@ -849,7 +838,7 @@ public class BoardViewModel : ObservableObject
     {
         if (IsGameOver)
         {
-            SetBoardViewMode(BoardViewMode.Split);
+            SetBoardViewMode(BoardViewMode.Enemy);
             return;
         }
 
@@ -1630,8 +1619,7 @@ public enum AnimationSpeed
 public enum BoardViewMode
 {
     Enemy = 0,
-    Player = 1,
-    Split = 2
+    Player = 1
 }
 
 public enum GameFeedbackCue

@@ -54,19 +54,19 @@
                 <Border Style="{StaticResource GameCardBorderStyle}"
                         BackgroundColor="#11253a"
                         Padding="8,6">
-                    <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
-                        <Button Text="Enemy"
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                        <Button Text="Fire Control"
                                 Command="{Binding SetBoardViewModeCommand}"
                                 CommandParameter="Enemy"
                                 Style="{StaticResource GameSecondaryButtonStyle}"
                                 BackgroundColor="{Binding EnemyBoardTabBackground}"
-                                WidthRequest="88"
+                                WidthRequest="112"
                                 HeightRequest="34"
                                 MinimumHeightRequest="34"
                                 MinimumWidthRequest="44"
                                 Padding="10,5" />
                         <Button Grid.Column="1"
-                                Text="Your Fleet"
+                                Text="Fleet Ops"
                                 Command="{Binding SetBoardViewModeCommand}"
                                 CommandParameter="Player"
                                 Style="{StaticResource GameSecondaryButtonStyle}"
@@ -76,18 +76,7 @@
                                 MinimumHeightRequest="34"
                                 MinimumWidthRequest="44"
                                 Padding="10,5" />
-                        <Button Grid.Column="2"
-                                Text="Split"
-                                Command="{Binding SetBoardViewModeCommand}"
-                                CommandParameter="Split"
-                                Style="{StaticResource GameSecondaryButtonStyle}"
-                                BackgroundColor="{Binding SplitBoardTabBackground}"
-                                WidthRequest="80"
-                                HeightRequest="34"
-                                MinimumHeightRequest="34"
-                                MinimumWidthRequest="44"
-                                Padding="10,5" />
-                        <Label Grid.Column="3"
+                        <Label Grid.Column="2"
                                Text="{Binding BoardFocusSummary}"
                                Style="{StaticResource GameCaptionLabelStyle}"
                                VerticalTextAlignment="Center"
@@ -219,7 +208,8 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout IsVisible="{Binding ShowEnemyBoard}" Spacing="6">
+                <Grid x:Name="CommandCenterBoardHost" ColumnDefinitions="*" RowDefinitions="Auto">
+                <VerticalStackLayout x:Name="EnemyBoardPage" Spacing="6">
                     <Label Text="Enemy Waters" Style="{StaticResource GameSectionLabelStyle}" Margin="0,8,0,0" />
 
                     <Border Style="{StaticResource GameCardBorderStyle}"
@@ -365,7 +355,11 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout IsVisible="{Binding ShowPlayerBoard}" Spacing="6">
+                <VerticalStackLayout x:Name="PlayerBoardPage"
+                                     Spacing="6"
+                                     IsVisible="False"
+                                     Opacity="0"
+                                     TranslationX="80">
                     <Label Text="Your Fleet" Style="{StaticResource GameSectionLabelStyle}" Margin="0,8,0,0" />
 
                     <Border Style="{StaticResource GameCardBorderStyle}"
@@ -510,6 +504,7 @@
                     </Grid>
                     </Border>
                 </VerticalStackLayout>
+                </Grid>
             </VerticalStackLayout>
         </ScrollView>
 
