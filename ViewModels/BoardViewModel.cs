@@ -63,6 +63,7 @@ public class BoardViewModel : ObservableObject
     private bool _highContrastMode;
     private bool _largeTextMode;
     private bool _reduceMotionMode;
+    private bool _hasSeenCommandBriefing;
     private BoardViewMode _boardViewMode = BoardViewMode.Enemy;
     private bool _isTurnTransitionActive;
     private string _turnTransitionMessage = string.Empty;
@@ -70,7 +71,7 @@ public class BoardViewModel : ObservableObject
     private int _gameSessionId;
 
     public const int Size = 10;
-    public const double CellSize = 32;
+    public const double CellSize = 44;
     public const double BoardAxisRailSize = 20;
     public const double BoardRailSpacing = 4;
 
@@ -303,7 +304,7 @@ public class BoardViewModel : ObservableObject
     public string StatsLine =>
         $"Record: {Wins}-{Losses}" +
         (Draws > 0 ? $" ({Draws} draws)" : string.Empty) +
-        $"   Turns: {TotalTurns}   Hit rate: {HitRate:P0}";
+        $"   Lifetime turns: {TotalTurns}   Lifetime hit rate: {HitRate:P0}";
 
     public int CurrentGameTurns
     {
@@ -347,7 +348,7 @@ public class BoardViewModel : ObservableObject
     public double CurrentGameHitRate => CurrentGameShots == 0 ? 0 : (double)CurrentGameHits / CurrentGameShots;
 
     public string CurrentGameStatsLine =>
-        $"Current game: turns {CurrentGameTurns}, shots {CurrentGameShots}, hit rate {CurrentGameHitRate:P0}";
+        $"Current mission: turns {CurrentGameTurns}, shots {CurrentGameShots}, hit rate {CurrentGameHitRate:P0}";
 
     public string LastGameSummary
     {
@@ -720,6 +721,7 @@ public class BoardViewModel : ObservableObject
         _largeTextMode = settings.LargeTextMode;
         _reduceMotionMode = settings.ReduceMotionMode;
         _isSettingsOpen = settings.SettingsPanelOpen;
+        _hasSeenCommandBriefing = settings.HasSeenCommandBriefing;
     }
 
     private void ResetCurrentGameStats()
@@ -757,7 +759,8 @@ public class BoardViewModel : ObservableObject
             HighContrastMode,
             LargeTextMode,
             ReduceMotionMode,
-            IsSettingsOpen));
+            IsSettingsOpen,
+            _hasSeenCommandBriefing));
     }
 
     private static double GetAnimationSpeedMultiplier(AnimationSpeed speed)
@@ -1025,9 +1028,9 @@ public class BoardViewModel : ObservableObject
     private void ShowGameStartOverlay()
     {
         FleetRecapItems.Clear();
-        OverlayTitle = "Operation Start";
-        OverlaySubtitle = "Deploy your fleet, then hunt enemy ships one coordinate at a time.";
-        OverlayPrimaryActionText = "Deploy Fleet";
+        OverlayTitle = "Command Briefing";
+        OverlaySubtitle = "1) Choose ships from the tray, right-click on your fleet grid to rotate.\n2) Place all ships, then switch to Fire Control and fire at enemy coordinates.\n3) Hits trigger follow-up intel. Sink all enemy ships to win.";
+        OverlayPrimaryActionText = "Begin Mission";
         ShowOverlayRecap = false;
         ShowOverlayAnalytics = false;
         IsOverlayVisible = true;
@@ -1101,9 +1104,19 @@ public class BoardViewModel : ObservableObject
         StatusMessage = "Select a ship and tap Your Fleet board to place it.";
         PlayerLastShotMessage = "Your last shot: --";
         EnemyLastShotMessage = "Enemy last shot: --";
-        OverlayPrimaryActionText = "Deploy Fleet";
+        OverlayPrimaryActionText = "Begin Mission";
 
-        ShowGameStartOverlay();
+        if (!_hasSeenCommandBriefing)
+        {
+            ShowGameStartOverlay();
+            _hasSeenCommandBriefing = true;
+            SaveSettings();
+        }
+        else
+        {
+            IsOverlayVisible = false;
+        }
+
         EmitFeedback(GameFeedbackCue.NewGame);
 
         OnPropertyChanged(nameof(PlacementOrientationText));

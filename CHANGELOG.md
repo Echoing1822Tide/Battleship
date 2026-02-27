@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-27
+
+### Added
+- First-launch "Command Briefing" overlay with updated gameplay instructions.
+- Right-click rotation support on fleet cells and ship tray cards.
+- Richer sound cue sequences for miss/new game/placement events.
+
+### Changed
+- Reworked main screen into a board-focused command-center layout with a fixed top control bar.
+- Increased board cell sizing to improve ship-grid alignment and readability.
+- Clarified stat wording to distinguish lifetime turns from current mission stats.
+- Added cinematic turn transition messaging to keep turn pacing readable.
+
+### Fixed
+- Removed scroll-container behavior that caused board clipping and awkward ship displacement.
+- Updated settings persistence schema and tests for command-briefing visibility state.
+
 ## [1.2.0] - 2026-02-25
 
 ### Added

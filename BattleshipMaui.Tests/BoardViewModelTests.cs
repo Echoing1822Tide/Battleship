@@ -8,7 +8,11 @@ public class BoardViewModelTests
     [Trait("Category", "Core9")]
     public void Constructor_StartsInPlacementPhase()
     {
-        var vm = new BoardViewModel(new Random(7));
+        var vm = new BoardViewModel(
+            new Random(7),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with { HasSeenCommandBriefing = false }),
+            new NoOpFeedbackService());
 
         Assert.Equal(100, vm.EnemyCells.Count);
         Assert.Equal(100, vm.PlayerCells.Count);
@@ -25,7 +29,7 @@ public class BoardViewModelTests
         Assert.Equal(0, vm.CurrentGameHits);
         Assert.Contains("No completed games yet.", vm.LastGameSummary);
         Assert.True(vm.IsOverlayVisible);
-        Assert.Equal("Deploy Fleet", vm.OverlayPrimaryActionText);
+        Assert.Equal("Begin Mission", vm.OverlayPrimaryActionText);
         Assert.Equal("Placement phase", vm.TurnMessage);
         Assert.Contains("Selected ship:", vm.PlacementSelectionMessage);
     }
@@ -65,7 +69,8 @@ public class BoardViewModelTests
             HighContrastMode: true,
             LargeTextMode: true,
             ReduceMotionMode: true,
-            SettingsPanelOpen: false));
+            SettingsPanelOpen: false,
+            HasSeenCommandBriefing: false));
 
         var vm = new BoardViewModel(new Random(10), statsStore, settingsStore, new NoOpFeedbackService());
 
@@ -94,7 +99,11 @@ public class BoardViewModelTests
     [Fact]
     public void DismissOverlayCommand_HidesOverlay()
     {
-        var vm = new BoardViewModel(new Random(12));
+        var vm = new BoardViewModel(
+            new Random(12),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with { HasSeenCommandBriefing = false }),
+            new NoOpFeedbackService());
         Assert.True(vm.IsOverlayVisible);
 
         vm.DismissOverlayCommand.Execute(null);

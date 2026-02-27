@@ -16,7 +16,8 @@ public readonly record struct GameSettingsSnapshot(
     bool HighContrastMode,
     bool LargeTextMode,
     bool ReduceMotionMode,
-    bool SettingsPanelOpen)
+    bool SettingsPanelOpen,
+    bool HasSeenCommandBriefing)
 {
     public static GameSettingsSnapshot Default => new(
         Difficulty: CpuDifficulty.Standard,
@@ -26,7 +27,8 @@ public readonly record struct GameSettingsSnapshot(
         HighContrastMode: false,
         LargeTextMode: false,
         ReduceMotionMode: false,
-        SettingsPanelOpen: true);
+        SettingsPanelOpen: false,
+        HasSeenCommandBriefing: false);
 }
 
 public sealed class JsonFileGameSettingsStore : IGameSettingsStore

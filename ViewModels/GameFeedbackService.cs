@@ -24,6 +24,12 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         {
             var sequence = cue switch
             {
+                GameFeedbackCue.Miss => new[]
+                {
+                    new ToneStep(520, 24, 6),
+                    new ToneStep(440, 30, 4),
+                    new ToneStep(390, 36)
+                },
                 GameFeedbackCue.Hit => new[]
                 {
                     new ToneStep(930, 32, 8),
@@ -55,8 +61,9 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
                 },
                 GameFeedbackCue.NewGame => new[]
                 {
-                    new ToneStep(700, 44, 8),
-                    new ToneStep(880, 58)
+                    new ToneStep(680, 34, 6),
+                    new ToneStep(840, 40, 8),
+                    new ToneStep(1020, 52)
                 },
                 GameFeedbackCue.PlacementComplete => new[]
                 {
@@ -65,8 +72,9 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
                 },
                 GameFeedbackCue.PlaceShip => new[]
                 {
-                    new ToneStep(560, 28, 4),
-                    new ToneStep(620, 34)
+                    new ToneStep(520, 22, 4),
+                    new ToneStep(610, 28, 5),
+                    new ToneStep(560, 22)
                 },
                 _ => new[]
                 {

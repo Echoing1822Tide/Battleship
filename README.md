@@ -2,26 +2,30 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/Framework-.NET%20MAUI-0f6cbd)](https://learn.microsoft.com/dotnet/maui/)
-[![Release](https://img.shields.io/badge/Release-v1.2.0-2ea44f)](#versioning--releases)
+[![Release](https://img.shields.io/badge/Release-v1.3.0-2ea44f)](#versioning--releases)
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE.md)
 
 A polished, fully playable Battleship game built with .NET MAUI and a C# game core.
 
 ## Versioning & Releases
-- Current public app release version: `v1.2.0`
+- Current public app release version: `v1.3.0`
 - Release history and iteration details: [CHANGELOG.md](./CHANGELOG.md)
-- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.2.0`)
+- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.3.0`)
 
 ## Highlights
-- Manual fleet placement (tap-to-place + rotate).
+- Command-center UX with full-width gameboard focus and top control bar.
+- Two-view board flow (`Fire Control` and `Fleet Ops`) with animated transitions.
+- Manual fleet placement (left-click place + right-click rotate).
 - Turn-based player vs CPU combat.
 - Smart CPU hunt/target strategy after hits.
 - Ship image overlays with sunk/reveal animations.
+- Cinematic turn pacing with transition messaging and animated impact markers.
+- First-launch "Command Briefing" overlay with gameplay instructions.
 - End-game enemy fleet reveal.
 - Coordinate labels (`A-J` and `1-10`) and accessibility hints.
 - Persistent stats:
   - Wins, losses, draws
-  - Total turns, shots, hit rate
+  - Lifetime turns, shots, hit rate
   - Current-game summary + last-game summary
 - Unit tests and GitHub Actions CI.
 
@@ -51,12 +55,19 @@ dotnet build BattleshipMaui.sln
 dotnet run --project BattleshipMaui.csproj
 ```
 
+Release publish + run `.exe` directly:
+```powershell
+dotnet publish BattleshipMaui.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained false
+```
+Then launch:
+`bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\BattleshipMaui.exe`
+
 ## Gameplay
 1. Press `New Game`.
 2. Place all ships on `Your Fleet`:
    - Select ship card.
-   - Use `Orientation` to rotate.
-   - Tap board cells to place.
+   - Right-click on your fleet board (or use `Orientation`) to rotate.
+   - Left-click board cells to place.
 3. Fire on `Enemy Waters` by tapping a cell.
 4. Alternate turns with CPU until one fleet is sunk.
 5. At game-over:
@@ -67,7 +78,8 @@ dotnet run --project BattleshipMaui.csproj
 ## Controls
 - `New Game`: reset boards and begin placement.
 - `Reset Stats`: clear saved cumulative stats.
-- `Rotate`: switch ship placement orientation.
+- `Rotate` / right-click: switch ship placement orientation.
+- `Fire Control` / `Fleet Ops`: switch between enemy and player board views.
 
 ## Testing
 Run full local suite:
