@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-03-03
+
+### Changed
+- Updated project version metadata to `v1.4.1`.
+- Updated README release badge/version references and public release readiness statement.
+
+### Fixed
+- Locked Command Center board row layout so the game boards stay in a fixed vertical position.
+- Embedded the naval ship icon directly into the Windows EXE for consistent published app icon behavior.
+
 ## [1.4.0] - 2026-03-03
 
 ### Added
