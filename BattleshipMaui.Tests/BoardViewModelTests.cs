@@ -203,6 +203,21 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void ChangingDifficultyToEasy_MidGame_DoesNotForceImmediateDraw()
+    {
+        var vm = new BoardViewModel(new Random(301));
+        PlaceAllShips(vm);
+
+        vm.SelectedDifficulty = CpuDifficulty.Easy;
+        vm.EnemyCellTappedCommand.Execute(vm.EnemyCells[0]);
+
+        Assert.False(vm.IsGameOver);
+        Assert.NotEqual("Draw", vm.TurnMessage);
+        Assert.StartsWith("Enemy last shot:", vm.EnemyLastShotMessage);
+        Assert.NotEqual("Enemy last shot: --", vm.EnemyLastShotMessage);
+    }
+
+    [Fact]
     [Trait("Category", "Core9")]
     public void NewGameCommand_ResetsToPlacementPhase()
     {

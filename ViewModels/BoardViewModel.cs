@@ -422,6 +422,12 @@ public class BoardViewModel : ObservableObject
             if (_selectedDifficulty == value) return;
             _selectedDifficulty = value;
             OnPropertyChanged();
+            if (_playerBoard is not null && _enemyBoard is not null && !IsGameOver)
+            {
+                InitializeEnemyTargeting();
+                if (!IsPlacementPhase)
+                    StatusMessage = $"CPU difficulty set to {_selectedDifficulty}. Enemy targeting recalibrated.";
+            }
             SaveSettings();
         }
     }

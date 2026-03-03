@@ -638,12 +638,14 @@
                 <Border x:Name="SettingsCard"
                         Style="{StaticResource GameCardBorderStyle}"
                         Margin="18"
-                        WidthRequest="760"
-                        MaximumWidthRequest="760"
+                        WidthRequest="860"
+                        MaximumWidthRequest="920"
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
                         Padding="18,16"
                         BackgroundColor="#13283f">
+                    <ScrollView VerticalScrollBarVisibility="Never"
+                                HorizontalScrollBarVisibility="Never">
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                             <VerticalStackLayout Spacing="2">
@@ -688,21 +690,22 @@
                             </Grid>
                         </Border>
 
-                        <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="14">
-                            <HorizontalStackLayout Spacing="6">
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="18" RowSpacing="8">
+                            <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
                                 <Switch IsToggled="{Binding HighContrastMode}" />
                                 <Label Text="High contrast" Style="{StaticResource GameCaptionLabelStyle}" VerticalTextAlignment="Center" />
                             </HorizontalStackLayout>
-                            <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                            <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
                                 <Switch IsToggled="{Binding LargeTextMode}" />
                                 <Label Text="Large text" Style="{StaticResource GameCaptionLabelStyle}" VerticalTextAlignment="Center" />
                             </HorizontalStackLayout>
-                            <HorizontalStackLayout Grid.Column="2" Spacing="6">
+                            <HorizontalStackLayout Grid.Row="1" Grid.ColumnSpan="2" HorizontalOptions="Center" Spacing="6">
                                 <Switch IsToggled="{Binding ReduceMotionMode}" />
                                 <Label Text="Reduce motion" Style="{StaticResource GameCaptionLabelStyle}" VerticalTextAlignment="Center" />
                             </HorizontalStackLayout>
                         </Grid>
                     </VerticalStackLayout>
+                    </ScrollView>
                 </Border>
             </Grid>
 
