@@ -10,6 +10,7 @@
 
 		<!-- Make it a GUI app (no console window) -->
 		<OutputType>WinExe</OutputType>
+		<ApplicationIcon>Resources\AppIcon\appicon.ico</ApplicationIcon>
 
 		<!-- Unpackaged = fewer WinAppSDK surprises for local runs -->
 		<WindowsPackageType>None</WindowsPackageType>
