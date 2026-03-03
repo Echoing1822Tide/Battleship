@@ -5,6 +5,7 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Input;
 using WinUIScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility;
 using WinUIScrollMode = Microsoft.UI.Xaml.Controls.ScrollMode;
 using WinUIZoomMode = Microsoft.UI.Xaml.Controls.ZoomMode;
@@ -170,18 +171,34 @@ public partial class MainPage : ContentPage
     private static void DisableBoardScrolling(CollectionView board)
     {
 #if WINDOWS
-        if (board.Handler?.PlatformView is not FrameworkElement root)
+        if (board.Handler?.PlatformView is ListViewBase listView)
+        {
+            // Hard-lock the board layer so it cannot pan independently of ship overlays.
+            ScrollViewer.SetVerticalScrollMode(listView, WinUIScrollMode.Disabled);
+            ScrollViewer.SetHorizontalScrollMode(listView, WinUIScrollMode.Disabled);
+            ScrollViewer.SetVerticalScrollBarVisibility(listView, WinUIScrollBarVisibility.Hidden);
+            ScrollViewer.SetHorizontalScrollBarVisibility(listView, WinUIScrollBarVisibility.Hidden);
+            ScrollViewer.SetZoomMode(listView, WinUIZoomMode.Disabled);
+            listView.IsSwipeEnabled = false;
+            listView.CanDragItems = false;
+            listView.CanReorderItems = false;
+            listView.ManipulationMode = ManipulationModes.None;
             return;
+        }
 
-        var scrollViewer = FindDescendant<ScrollViewer>(root);
-        if (scrollViewer is null)
-            return;
+        if (board.Handler?.PlatformView is FrameworkElement root)
+        {
+            var scrollViewer = FindDescendant<ScrollViewer>(root);
+            if (scrollViewer is null)
+                return;
 
-        scrollViewer.VerticalScrollMode = WinUIScrollMode.Disabled;
-        scrollViewer.HorizontalScrollMode = WinUIScrollMode.Disabled;
-        scrollViewer.VerticalScrollBarVisibility = WinUIScrollBarVisibility.Hidden;
-        scrollViewer.HorizontalScrollBarVisibility = WinUIScrollBarVisibility.Hidden;
-        scrollViewer.ZoomMode = WinUIZoomMode.Disabled;
+            scrollViewer.VerticalScrollMode = WinUIScrollMode.Disabled;
+            scrollViewer.HorizontalScrollMode = WinUIScrollMode.Disabled;
+            scrollViewer.VerticalScrollBarVisibility = WinUIScrollBarVisibility.Hidden;
+            scrollViewer.HorizontalScrollBarVisibility = WinUIScrollBarVisibility.Hidden;
+            scrollViewer.ZoomMode = WinUIZoomMode.Disabled;
+            scrollViewer.ManipulationMode = ManipulationModes.None;
+        }
 #endif
     }
 
