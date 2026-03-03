@@ -86,7 +86,7 @@
 
         <Grid Grid.Row="1"
               Padding="{StaticResource GamePagePadding}"
-              RowDefinitions="Auto,Auto,Auto,*"
+              RowDefinitions="Auto,52,176,*"
               RowSpacing="10">
             <Border Grid.Row="0"
                     Style="{StaticResource GameCardBorderStyle}"
@@ -150,7 +150,9 @@
                 </HorizontalStackLayout>
             </Border>
 
-            <VerticalStackLayout Grid.Row="2" Spacing="10">
+            <VerticalStackLayout Grid.Row="2"
+                                 Spacing="10"
+                                 VerticalOptions="Fill">
                 <Border IsVisible="{Binding IsSettingsOpen}"
                         Style="{StaticResource GameCardBorderStyle}"
                         BackgroundColor="#112844"
