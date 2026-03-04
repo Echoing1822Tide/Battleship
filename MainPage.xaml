@@ -394,15 +394,15 @@
                                                     SemanticProperties.Hint="Enemy cell. Tap to fire.">
                                                 <Grid>
                                                     <Border IsVisible="{Binding IsFlameVisible}"
-                                                            Margin="6"
-                                                            Opacity="0.72"
+                                                            Margin="4"
+                                                            Opacity="0.86"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 8">
                                                         <Border.Background>
-                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.68">
+                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.72">
                                                                 <GradientStop Color="#FFF5B043" Offset="0.0" />
-                                                                <GradientStop Color="#E6FF6A00" Offset="0.4" />
-                                                                <GradientStop Color="#B8D94700" Offset="0.72" />
+                                                                <GradientStop Color="#F4FF7D00" Offset="0.42" />
+                                                                <GradientStop Color="#CAD94700" Offset="0.74" />
                                                                 <GradientStop Color="#00D94700" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>
@@ -656,15 +656,15 @@
                                                     SemanticProperties.Hint="Your fleet cell. Left-click to place the selected ship. Right-click to rotate orientation.">
                                                 <Grid>
                                                     <Border IsVisible="{Binding IsFlameVisible}"
-                                                            Margin="6"
-                                                            Opacity="0.72"
+                                                            Margin="4"
+                                                            Opacity="0.86"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 8">
                                                         <Border.Background>
-                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.68">
+                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.72">
                                                                 <GradientStop Color="#FFF5B043" Offset="0.0" />
-                                                                <GradientStop Color="#E6FF6A00" Offset="0.4" />
-                                                                <GradientStop Color="#B8D94700" Offset="0.72" />
+                                                                <GradientStop Color="#F4FF7D00" Offset="0.42" />
+                                                                <GradientStop Color="#CAD94700" Offset="0.74" />
                                                                 <GradientStop Color="#00D94700" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>
@@ -796,7 +796,7 @@
 
             <Grid x:Name="SettingsScrim"
                   IsVisible="{Binding IsSettingsOpen}"
-                  BackgroundColor="#8a0b1320"
+                  BackgroundColor="#360b1320"
                   ZIndex="26"
                   InputTransparent="False">
                 <Border x:Name="SettingsCard"

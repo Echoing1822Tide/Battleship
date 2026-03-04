@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6] - 2026-03-04
+
+### Changed
+- Increased ship visual scale again for `Aircraft Carrier` and `Battleship` (both orientations) so placement better fills intended grid footprint.
+- Reduced settings-panel background dimming so board state remains more visible while the command panel is open.
+
+### Fixed
+- Flame hit effect now runs as a continuous flicker loop while the cell remains in hit state (instead of a one-time pulse).
+- Flame animation now reliably starts for hit cells even when board cells are rebound/recycled by the grid template.
+- Flame glow intensity and footprint were tuned so the fire layer is clearly visible below the explosion overlay without breaking grid lock.
+
+### Release
+- `v1.6.6` is marked ready for **public release**.
+
 ## [1.6.5] - 2026-03-04
 
 ### Added

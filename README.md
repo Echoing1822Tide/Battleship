@@ -2,18 +2,18 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/Framework-.NET%20MAUI-0f6cbd)](https://learn.microsoft.com/dotnet/maui/)
-[![Release](https://img.shields.io/badge/Release-v1.6.5-2ea44f)](#versioning--releases)
+[![Release](https://img.shields.io/badge/Release-v1.6.6-2ea44f)](#versioning--releases)
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE.md)
 
 A polished, fully playable Battleship game built with .NET MAUI and a C# game core.
 
 ## Versioning & Releases
-- Current public app release version: `v1.6.5`
+- Current public app release version: `v1.6.6`
 - Release history and iteration details: [CHANGELOG.md](./CHANGELOG.md)
-- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.6.5`)
+- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.6.6`)
 
 ## Release Readiness
-- `v1.6.5` is **ready for public release**.
+- `v1.6.6` is **ready for public release**.
 
 ## Highlights
 - Full command-center visual overhaul with a game-first style.
@@ -40,10 +40,13 @@ A polished, fully playable Battleship game built with .NET MAUI and a C# game co
 - Ship-hit sound FX now use ship-specific explosion audio (submarine gets underwater hit FX).
 - Miss shots rotate through 4 water-explosion sound effects with immediate-repeat prevention.
 - Hit cells now include animated flame rendered beneath the explosion marker on both boards.
+- Flame hit-layer now continuously flickers while active (instead of a single pulse), improving per-cell hit readability.
 - Explosion markers now randomize quarter-turn orientation for more dynamic hit visuals.
 - Ship sprites and placement preview now preserve aspect ratio with vertical rotation and per-ship scaling to maintain correct class silhouettes.
+- Aircraft Carrier and Battleship sprite scales were increased again for closer in-grid visual proportioning.
 - Gameplay area can scroll vertically so both gameboards are no longer clipped at the bottom on tighter windows.
 - Ship overlay opacity tuned so enemy hit/miss markers remain visible on your fleet board.
+- Settings overlay dimming was reduced so both boards remain clearer while the command panel is open.
 - Welcome mission popup now appears at app open with instructions and `Let's Fight!` action.
 - First-launch "Command Briefing" overlay with gameplay instructions.
 - Enemy ships are revealed only when they are destroyed.
