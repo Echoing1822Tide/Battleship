@@ -23,6 +23,7 @@ public class BoardViewModel : ObservableObject
     private readonly List<PlayerShotRecord> _currentGameShotHistory = new();
     private BoardCellVm? _placementPreviewAnchorCell;
     private bool _hasShownWelcomeOverlayThisSession;
+    private bool _musicPlaybackUnlocked;
 
     private GameBoard? _playerBoard;
     private GameBoard? _enemyBoard;
@@ -89,7 +90,7 @@ public class BoardViewModel : ObservableObject
     private int _gameSessionId;
 
     public const int Size = 10;
-    public const double CellSize = 46;
+    public const double CellSize = 44;
     public const double BoardAxisRailSize = 24;
     public const double BoardRailSpacing = 6;
     public const double ShipVisualInset = 1.0;
@@ -1029,7 +1030,8 @@ public class BoardViewModel : ObservableObject
 
     private void ApplyMusicSettings()
     {
-        _backgroundMusicService.ApplySettings(MusicEnabled, MusicVolume);
+        bool shouldPlayMusic = _musicPlaybackUnlocked && MusicEnabled;
+        _backgroundMusicService.ApplySettings(shouldPlayMusic, MusicVolume);
     }
 
     private static Color ResolveThemeColor(string key, string fallbackHex)
@@ -1233,14 +1235,35 @@ public class BoardViewModel : ObservableObject
         SetBoardViewMode(IsPlayerTurn ? BoardViewMode.Enemy : BoardViewMode.Player);
     }
 
-    private void EmitFeedback(GameFeedbackCue cue)
+    private void EmitFeedback(GameFeedbackCue cue, string? shipName = null)
     {
-        _feedbackService.Play(cue, SoundEnabled, HapticsEnabled, ReduceMotionMode);
+        _feedbackService.Play(cue, SoundEnabled, HapticsEnabled, ReduceMotionMode, shipName);
+    }
+
+    private void EmitShotFeedback(ShotInfo shot)
+    {
+        GameFeedbackCue cue = shot.Result switch
+        {
+            AttackResult.Sunk => GameFeedbackCue.Sunk,
+            AttackResult.Hit => GameFeedbackCue.Hit,
+            _ => GameFeedbackCue.Miss
+        };
+
+        EmitFeedback(cue, shot.SunkShipName);
     }
 
     private void DismissOverlay()
     {
+        bool shouldUnlockMusic = IsOverlayVisible
+            && !ShowOverlayRecap
+            && !ShowOverlayAnalytics
+            && string.Equals(OverlayPrimaryActionText, "Let's Fight!", StringComparison.OrdinalIgnoreCase);
+
         IsOverlayVisible = false;
+
+        if (shouldUnlockMusic)
+            _musicPlaybackUnlocked = true;
+
         EnsureMusicPlayback();
     }
 
@@ -1491,12 +1514,16 @@ public class BoardViewModel : ObservableObject
         if (!_hasShownWelcomeOverlayThisSession)
         {
             ShowGameStartOverlay();
+            _musicPlaybackUnlocked = false;
+            ApplyMusicSettings();
             _hasShownWelcomeOverlayThisSession = true;
             _hasSeenCommandBriefing = true;
         }
         else
         {
             IsOverlayVisible = false;
+            _musicPlaybackUnlocked = true;
+            ApplyMusicSettings();
         }
 
         EmitFeedback(GameFeedbackCue.NewGame);
@@ -1618,7 +1645,7 @@ public class BoardViewModel : ObservableObject
         int col = _placementPreviewAnchorCell.Col;
 
         PlacementPreviewBounds = BuildShipBounds(row, col, ship.Size, isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal);
-        PlacementPreviewImageRotation = 0;
+        PlacementPreviewImageRotation = isVertical ? 90 : 0;
         PlacementPreviewImageSource = _selectedPlacementShip.ImageSource;
 
         bool isValidPlacement = CanPlaceShipAt(ship, row, col, isVertical);
@@ -1928,12 +1955,7 @@ public class BoardViewModel : ObservableObject
 
         RecordPlayerShot(playerShot);
         ApplyShotResult(EnemyCells, playerShot);
-        EmitFeedback(playerShot.Result switch
-        {
-            AttackResult.Sunk => GameFeedbackCue.Sunk,
-            AttackResult.Hit => GameFeedbackCue.Hit,
-            _ => GameFeedbackCue.Miss
-        });
+        EmitShotFeedback(playerShot);
 
         PlayerLastShotMessage = $"Your last shot: {ToBoardCoordinate(playerShot.Row, playerShot.Col)} - {playerShot.Message}";
         StatusMessage = "Enemy is firing...";
@@ -1993,12 +2015,7 @@ public class BoardViewModel : ObservableObject
 
             RecordPlayerShot(playerShot);
             ApplyShotResult(EnemyCells, playerShot);
-            EmitFeedback(playerShot.Result switch
-            {
-                AttackResult.Sunk => GameFeedbackCue.Sunk,
-                AttackResult.Hit => GameFeedbackCue.Hit,
-                _ => GameFeedbackCue.Miss
-            });
+            EmitShotFeedback(playerShot);
 
             PlayerLastShotMessage = $"Your last shot: {targetCoordinate} - {playerShot.Message}";
             OnPropertyChanged(nameof(ScoreLine));
@@ -2115,12 +2132,7 @@ public class BoardViewModel : ObservableObject
                 }
 
                 OnPropertyChanged(nameof(ScoreLine));
-                EmitFeedback(enemyShot.Result switch
-                {
-                    AttackResult.Sunk => GameFeedbackCue.Sunk,
-                    AttackResult.Hit => GameFeedbackCue.Hit,
-                    _ => GameFeedbackCue.Miss
-                });
+                EmitShotFeedback(enemyShot);
 
                 EnemyLastShotMessage = $"Enemy last shot: {targetCoordinate} - {enemyShot.Message}";
                 StatusMessage = BuildEnemyShotCallout(targetCoordinate, enemyShot);
@@ -2206,12 +2218,7 @@ public class BoardViewModel : ObservableObject
 
             OnPropertyChanged(nameof(ScoreLine));
 
-            EmitFeedback(enemyShot.Result switch
-            {
-                AttackResult.Sunk => GameFeedbackCue.Sunk,
-                AttackResult.Hit => GameFeedbackCue.Hit,
-                _ => GameFeedbackCue.Miss
-            });
+            EmitShotFeedback(enemyShot);
 
             if (_playerBoard.AllShipsSunk)
             {
@@ -2538,7 +2545,7 @@ public class ShipSpriteVm : ObservableObject
     }
 
     public double Rotation => 0;
-    public double ImageRotation => 0;
+    public double ImageRotation => Axis == ShipAxis.Vertical ? 90 : 0;
 
     public bool IsSunk
     {

@@ -112,6 +112,33 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void DismissOverlayCommand_FromIntroOverlay_StartsBackgroundMusic()
+    {
+        var musicService = new RecordingBackgroundMusicService();
+        var vm = new BoardViewModel(
+            new Random(120),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with
+            {
+                HasSeenCommandBriefing = false,
+                MusicEnabled = true,
+                MusicVolume = 0.35
+            }),
+            new NoOpFeedbackService(),
+            musicService);
+
+        Assert.True(vm.IsOverlayVisible);
+        Assert.Equal("Let's Fight!", vm.OverlayPrimaryActionText);
+        Assert.False(musicService.LastEnabled);
+
+        vm.DismissOverlayCommand.Execute(null);
+
+        Assert.False(vm.IsOverlayVisible);
+        Assert.True(musicService.LastEnabled);
+        Assert.Equal(0.35, musicService.LastVolume, 3);
+    }
+
+    [Fact]
     public void PlayerCellTappedCommand_PlacesSelectedShip()
     {
         var vm = new BoardViewModel(new Random(13));
@@ -408,8 +435,20 @@ public class BoardViewModelTests
 
     private sealed class NoOpFeedbackService : IGameFeedbackService
     {
-        public void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion)
+        public void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
         {
+        }
+    }
+
+    private sealed class RecordingBackgroundMusicService : IBackgroundMusicService
+    {
+        public bool LastEnabled { get; private set; }
+        public double LastVolume { get; private set; }
+
+        public void ApplySettings(bool enabled, double volume)
+        {
+            LastEnabled = enabled;
+            LastVolume = volume;
         }
     }
 }

@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-03-04
+
+### Added
+- Integrated real ship-impact and miss-impact audio playback using packaged MP3 assets.
+- Added ship-specific hit audio mapping:
+  - `Destroyer`, `Aircraft Carrier`, `Cruiser`, `Battleship` -> `soundreality-explosion-fx-343683.mp3`
+  - `Submarine` -> `daviddumaisaudio-large-underwater-explosion-190270.mp3`
+- Added randomized miss splash/explosion audio rotation across:
+  - `Waterside_Explosion_Water_Sound_Effects1.mp3`
+  - `Waterside_Explosion_Water_Sound_Effects2.mp3`
+  - `Waterside_Explosion_Water_Sound_Effects3.mp3`
+  - `Waterside_Explosion_Water_Sound_Effects4.mp3`
+
+### Changed
+- Background music start behavior now gates playback until the player confirms the intro briefing with `Let's Fight!`.
+- Expanded audio content packaging so all `Resources/Audio/*.mp3` files are copied to output/publish.
+- Updated release metadata and version markers to `v1.6.3`.
+
+### Fixed
+- Corrected ship sprite warping by preserving image aspect ratio and rotating vertical ships instead of stretching.
+- Corrected placement preview ship distortion using matching rotation/aspect behavior.
+- Resolved board bottom cut-off pressure by allowing vertical page scrolling for gameplay content while keeping overlays fixed.
+- Retuned board geometry by reducing cell size from `46` to `44` for better default fit.
+
+### Release
+- `v1.6.3` is marked ready for **public release**.
+
 ## [1.6.2] - 2026-03-03
 
 ### Changed
