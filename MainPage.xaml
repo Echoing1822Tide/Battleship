@@ -354,7 +354,7 @@
                                                 </Border.Behaviors>
                                                 <Image Source="{Binding ImageSource}"
                                                        Rotation="{Binding ImageRotation}"
-                                                       Aspect="AspectFill" />
+                                                       Aspect="Fill" />
                                             </Border>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
@@ -574,7 +574,7 @@
                                                 </Border.Behaviors>
                                                 <Image Source="{Binding ImageSource}"
                                                        Rotation="{Binding ImageRotation}"
-                                                       Aspect="AspectFill" />
+                                                       Aspect="Fill" />
                                             </Border>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
@@ -596,7 +596,7 @@
                                             Padding="0">
                                         <Image Source="{Binding PlacementPreviewImageSource}"
                                                Rotation="{Binding PlacementPreviewImageRotation}"
-                                               Aspect="AspectFill"
+                                               Aspect="Fill"
                                                Opacity="0.7" />
                                     </Border>
                                 </AbsoluteLayout>

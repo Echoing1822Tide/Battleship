@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-03-03
+
+### Changed
+- Increased board cell sizing for larger, easier-to-read gameboards.
+- Reduced enemy "Thinking" sequence duration to a single 2-7 second anticipation cycle.
+- Music playback now re-triggers when the player dismisses the welcome overlay (`Let's Fight!`).
+
+### Fixed
+- Corrected vertical ship rendering so placed ships no longer appear partially clipped.
+- Improved ship placement centering by tightening sprite inset and image fill behavior.
+- Ensured enemy shot results remain visible on the player board by reducing ship overlay opacity.
+
+### Release
+- `v1.6.2` is marked ready for public release.
+
 ## [1.6.1] - 2026-03-03
 
 ### Changed

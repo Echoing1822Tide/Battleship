@@ -89,10 +89,10 @@ public class BoardViewModel : ObservableObject
     private int _gameSessionId;
 
     public const int Size = 10;
-    public const double CellSize = 40;
+    public const double CellSize = 46;
     public const double BoardAxisRailSize = 24;
     public const double BoardRailSpacing = 6;
-    public const double ShipVisualInset = 1.5;
+    public const double ShipVisualInset = 1.0;
     public const double MissPegSize = 16;
 
     private static readonly ShipTemplate[] FleetTemplates =
@@ -1142,7 +1142,7 @@ public class BoardViewModel : ObservableObject
             "Solution locked. Executing strike sequence"
         };
 
-        int totalDuration = _random.Next(5000, 10001);
+        int totalDuration = _random.Next(2000, 7001);
         int remaining = totalDuration;
         int dotTick = 0;
 
@@ -1241,6 +1241,7 @@ public class BoardViewModel : ObservableObject
     private void DismissOverlay()
     {
         IsOverlayVisible = false;
+        EnsureMusicPlayback();
     }
 
     private void SaveStats()
@@ -1617,7 +1618,7 @@ public class BoardViewModel : ObservableObject
         int col = _placementPreviewAnchorCell.Col;
 
         PlacementPreviewBounds = BuildShipBounds(row, col, ship.Size, isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal);
-        PlacementPreviewImageRotation = isVertical ? 90 : 0;
+        PlacementPreviewImageRotation = 0;
         PlacementPreviewImageSource = _selectedPlacementShip.ImageSource;
 
         bool isValidPlacement = CanPlaceShipAt(ship, row, col, isVertical);
@@ -2537,7 +2538,7 @@ public class ShipSpriteVm : ObservableObject
     }
 
     public double Rotation => 0;
-    public double ImageRotation => Axis == ShipAxis.Vertical ? 90 : 0;
+    public double ImageRotation => 0;
 
     public bool IsSunk
     {
@@ -2572,7 +2573,7 @@ public class ShipSpriteVm : ObservableObject
             if (!IsRevealed)
                 return 0;
 
-            return IsSunk ? 0.4 : 0.95;
+            return IsSunk ? 0.4 : 0.8;
         }
     }
 
