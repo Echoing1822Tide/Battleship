@@ -4,7 +4,7 @@ using Microsoft.Maui.ApplicationModel;
 
 namespace BattleshipMaui.Behaviors;
 
-public sealed class CellImpactAnimationBehavior : Behavior<VisualElement>
+public sealed class CellFlameAnimationBehavior : Behavior<VisualElement>
 {
     private VisualElement? _associatedObject;
     private BoardCellVm? _cell;
@@ -59,40 +59,36 @@ public sealed class CellImpactAnimationBehavior : Behavior<VisualElement>
             return;
 
         if (cell.MarkerState == ShotMarkerState.Hit && _lastMarkerState != ShotMarkerState.Hit)
-            await RunHitAnimationAsync(view).ConfigureAwait(false);
+            await RunFlameAnimationAsync(view).ConfigureAwait(false);
 
         _lastMarkerState = cell.MarkerState;
     }
 
-    private static async Task RunHitAnimationAsync(VisualElement view)
+    private static async Task RunFlameAnimationAsync(VisualElement view)
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
         {
-            double baseRotation = view.Rotation;
-
             if (AnimationRuntimeSettings.ReduceMotion)
             {
-                view.Opacity = 1;
+                view.Opacity = 0.62;
                 view.Scale = 1;
-                view.Rotation = baseRotation;
                 return;
             }
 
             view.Opacity = 0;
             view.Scale = 0.45;
-            view.Rotation = baseRotation - 10;
-
-            uint burst = ScaleDuration(120);
-            uint settle = ScaleDuration(180);
 
             await Task.WhenAll(
-                view.FadeToAsync(1, burst, Easing.CubicOut),
-                view.ScaleToAsync(1.22, burst, Easing.CubicOut),
-                view.RotateToAsync(baseRotation + 8, burst, Easing.CubicOut));
+                view.FadeToAsync(0.86, ScaleDuration(130), Easing.CubicOut),
+                view.ScaleToAsync(1.1, ScaleDuration(130), Easing.CubicOut));
 
             await Task.WhenAll(
-                view.ScaleToAsync(1, settle, Easing.CubicIn),
-                view.RotateToAsync(baseRotation, settle, Easing.CubicOut));
+                view.FadeToAsync(0.64, ScaleDuration(210), Easing.CubicInOut),
+                view.ScaleToAsync(0.96, ScaleDuration(210), Easing.CubicInOut));
+
+            await Task.WhenAll(
+                view.FadeToAsync(0.74, ScaleDuration(160), Easing.CubicInOut),
+                view.ScaleToAsync(1.02, ScaleDuration(160), Easing.CubicInOut));
         });
     }
 

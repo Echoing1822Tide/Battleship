@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] - 2026-03-04
+
+### Added
+- Added `Sound FX Volume` slider in settings with persisted value support.
+- Added animated flame layer for hit cells on both boards, rendered beneath the explosion marker and locked to the impacted grid cell.
+- Added quarter-turn randomized explosion orientation (`0`, `90`, `180`, `270`) for hit markers.
+
+### Changed
+- Background music default volume now starts at `10%`.
+- Sound FX default volume now starts at `10%`.
+- Miss-splash audio randomization now guarantees no immediate repeat of the previously played miss clip.
+- Ship scale tuning now supports orientation-specific profiles per ship class.
+
+### Fixed
+- Enemy ship sprites now reveal only after that ship is sunk (never before), and remain layered below the explosion overlay.
+- Increased vertical ship sizing for `Aircraft Carrier`, `Battleship`, `Cruiser`, and `Submarine` while keeping `Destroyer` unchanged.
+- Increased horizontal sizing for `Aircraft Carrier` and slightly for `Battleship`, while keeping `Cruiser`, `Submarine`, and `Destroyer` horizontal sizing aligned to requested targets.
+
+### Release
+- `v1.6.5` is marked ready for **public release**.
+
 ## [1.6.4] - 2026-03-04
 
 ### Changed

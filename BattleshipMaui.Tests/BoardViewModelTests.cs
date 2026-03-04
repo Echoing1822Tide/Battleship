@@ -85,6 +85,19 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void Constructor_DefaultsVolumesToTenPercent()
+    {
+        var vm = new BoardViewModel(
+            new Random(1005),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default),
+            new NoOpFeedbackService());
+
+        Assert.Equal(0.10, vm.MusicVolume, 3);
+        Assert.Equal(0.10, vm.SoundFxVolume, 3);
+    }
+
+    [Fact]
     public void Constructor_UpgradesLegacySettings_ToMusicEnabledByDefault()
     {
         var vm = new BoardViewModel(
@@ -154,7 +167,8 @@ public class BoardViewModelTests
             {
                 HasSeenCommandBriefing = false,
                 MusicEnabled = true,
-                MusicVolume = 0.35
+                MusicVolume = 0.35,
+                HasConfiguredMusicPreference = true
             }),
             new NoOpFeedbackService(),
             musicService);
@@ -304,7 +318,7 @@ public class BoardViewModelTests
     }
 
     [Fact]
-    public void GameOver_RevealsEnemyFleetSprites()
+    public void GameOver_OnlyRevealsDestroyedEnemyShips()
     {
         var vm = new BoardViewModel(new Random(37));
         PlaceAllShips(vm);
@@ -317,8 +331,7 @@ public class BoardViewModelTests
         }
 
         Assert.True(vm.IsGameOver);
-        Assert.True(vm.ShowEnemyFleet);
-        Assert.All(vm.EnemyShipSprites, ship => Assert.True(ship.IsRevealed));
+        Assert.All(vm.EnemyShipSprites.Where(ship => ship.IsRevealed), ship => Assert.True(ship.IsSunk));
     }
 
     [Fact]
@@ -413,6 +426,18 @@ public class BoardViewModelTests
         Assert.NotEqual(destroyer.ImageScale, carrier.ImageScale);
     }
 
+    [Fact]
+    public void ShipSpriteVm_UsesOrientationSpecificScaleProfiles()
+    {
+        var battleshipHorizontal = new ShipSpriteVm("Battleship", "battleship_4_pegs.png", 0, 0, 4, ShipAxis.Horizontal);
+        var battleshipVertical = new ShipSpriteVm("Battleship", "battleship_4_pegs.png", 0, 0, 4, ShipAxis.Vertical);
+        var cruiserHorizontal = new ShipSpriteVm("Cruiser", "cruiser_3_pegs.png", 0, 0, 3, ShipAxis.Horizontal);
+        var cruiserVertical = new ShipSpriteVm("Cruiser", "cruiser_3_pegs.png", 0, 0, 3, ShipAxis.Vertical);
+
+        Assert.True(battleshipVertical.ImageScale > battleshipHorizontal.ImageScale);
+        Assert.True(cruiserVertical.ImageScale > cruiserHorizontal.ImageScale);
+    }
+
     private static void PlaceAllShips(BoardViewModel vm)
     {
         PlaceShip(vm, "Aircraft Carrier", row: 0, col: 0, vertical: false);
@@ -480,7 +505,7 @@ public class BoardViewModelTests
 
     private sealed class NoOpFeedbackService : IGameFeedbackService
     {
-        public void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
+        public void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
         {
         }
     }

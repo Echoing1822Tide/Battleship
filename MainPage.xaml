@@ -339,7 +339,7 @@
                                                 VerticalOptions="Start"
                                                 BindableLayout.ItemsSource="{Binding EnemyShipSprites}"
                                                 IsVisible="{Binding ShowEnemyFleet}"
-                                                ZIndex="3">
+                                                ZIndex="1">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <Border AbsoluteLayout.LayoutBounds="{Binding Bounds}"
@@ -393,8 +393,27 @@
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Enemy cell. Tap to fire.">
                                                 <Grid>
+                                                    <Border IsVisible="{Binding IsFlameVisible}"
+                                                            Margin="6"
+                                                            Opacity="0.72"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 8">
+                                                        <Border.Background>
+                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.68">
+                                                                <GradientStop Color="#FFF5B043" Offset="0.0" />
+                                                                <GradientStop Color="#E6FF6A00" Offset="0.4" />
+                                                                <GradientStop Color="#B8D94700" Offset="0.72" />
+                                                                <GradientStop Color="#00D94700" Offset="1.0" />
+                                                            </RadialGradientBrush>
+                                                        </Border.Background>
+                                                        <Border.Behaviors>
+                                                            <behaviors:CellFlameAnimationBehavior />
+                                                        </Border.Behaviors>
+                                                    </Border>
+
                                                     <Image Source="{Binding MarkerImage}"
                                                            IsVisible="{Binding IsHitMarkerVisible}"
+                                                           Rotation="{Binding HitMarkerRotation}"
                                                            Aspect="AspectFill"
                                                            Opacity="0.9">
                                                         <Image.Behaviors>
@@ -636,8 +655,27 @@
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Your fleet cell. Left-click to place the selected ship. Right-click to rotate orientation.">
                                                 <Grid>
+                                                    <Border IsVisible="{Binding IsFlameVisible}"
+                                                            Margin="6"
+                                                            Opacity="0.72"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 8">
+                                                        <Border.Background>
+                                                            <RadialGradientBrush Center="0.5,0.72" Radius="0.68">
+                                                                <GradientStop Color="#FFF5B043" Offset="0.0" />
+                                                                <GradientStop Color="#E6FF6A00" Offset="0.4" />
+                                                                <GradientStop Color="#B8D94700" Offset="0.72" />
+                                                                <GradientStop Color="#00D94700" Offset="1.0" />
+                                                            </RadialGradientBrush>
+                                                        </Border.Background>
+                                                        <Border.Behaviors>
+                                                            <behaviors:CellFlameAnimationBehavior />
+                                                        </Border.Behaviors>
+                                                    </Border>
+
                                                     <Image Source="{Binding MarkerImage}"
                                                            IsVisible="{Binding IsHitMarkerVisible}"
+                                                           Rotation="{Binding HitMarkerRotation}"
                                                            Aspect="AspectFill"
                                                            Opacity="0.9">
                                                         <Image.Behaviors>
@@ -793,7 +831,7 @@
                                 BackgroundColor="{DynamicResource GameColorPanel}"
                                 Padding="12,10">
                             <Grid ColumnDefinitions="*,*"
-                                  RowDefinitions="Auto,Auto,Auto"
+                                  RowDefinitions="Auto,Auto,Auto,Auto"
                                   ColumnSpacing="12"
                                   RowSpacing="10">
                                 <VerticalStackLayout Spacing="4">
@@ -855,6 +893,20 @@
                                     </VerticalStackLayout>
                                     <Label Grid.Column="1"
                                            Text="{Binding MusicVolumePercent}"
+                                           Style="{StaticResource GameCaptionLabelStyle}"
+                                           VerticalTextAlignment="Center" />
+                                </Grid>
+
+                                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Sound FX Volume"
+                                               Style="{StaticResource GameCaptionLabelStyle}" />
+                                        <Slider Minimum="0"
+                                                Maximum="1"
+                                                Value="{Binding SoundFxVolume}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding SoundFxVolumePercent}"
                                            Style="{StaticResource GameCaptionLabelStyle}"
                                            VerticalTextAlignment="Center" />
                                 </Grid>

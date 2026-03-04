@@ -9,13 +9,14 @@ namespace BattleshipMaui.ViewModels;
 
 public interface IGameFeedbackService
 {
-    void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion, string? shipName = null);
+    void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null);
 }
 
 public sealed class DefaultGameFeedbackService : IGameFeedbackService
 {
     private const string SurfaceExplosionTrack = "soundreality-explosion-fx-343683.mp3";
     private const string SubmarineExplosionTrack = "daviddumaisaudio-large-underwater-explosion-190270.mp3";
+    private static readonly object MissTrackLock = new();
     private static readonly string[] MissExplosionTracks =
     {
         "Waterside_Explosion_Water_Sound_Effects1.mp3",
@@ -23,37 +24,60 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         "Waterside_Explosion_Water_Sound_Effects3.mp3",
         "Waterside_Explosion_Water_Sound_Effects4.mp3"
     };
+    private static int _lastMissTrackIndex = -1;
 
 #if WINDOWS
     private static readonly object EffectsLock = new();
     private static readonly MediaPlayer? EffectsPlayer = CreateEffectsPlayer();
 #endif
 
-    public void Play(GameFeedbackCue cue, bool soundEnabled, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
+    public void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
     {
         if (soundEnabled)
-            TryPlaySound(cue, shipName);
+            TryPlaySound(cue, shipName, soundFxVolume);
 
         if (hapticsEnabled)
             TryPlayHaptics(cue, reduceMotion);
     }
 
-    private static void TryPlaySound(GameFeedbackCue cue, string? shipName)
+    private static void TryPlaySound(GameFeedbackCue cue, string? shipName, double soundFxVolume)
     {
+        double fxVolume = Math.Clamp(soundFxVolume, 0, 1);
+        if (fxVolume <= 0)
+            return;
+
         string? effectTrack = cue switch
         {
-            GameFeedbackCue.Miss => MissExplosionTracks[Random.Shared.Next(MissExplosionTracks.Length)],
+            GameFeedbackCue.Miss => SelectMissExplosionTrack(),
             GameFeedbackCue.Hit or GameFeedbackCue.Sunk => ResolveShipHitTrack(shipName),
             _ => null
         };
 
         if (!string.IsNullOrWhiteSpace(effectTrack))
         {
-            if (TryPlayAudioTrack(effectTrack))
+            if (TryPlayAudioTrack(effectTrack, fxVolume))
                 return;
         }
 
         TryPlayToneFallback(cue);
+    }
+
+    private static string SelectMissExplosionTrack()
+    {
+        lock (MissTrackLock)
+        {
+            if (MissExplosionTracks.Length == 1)
+                return MissExplosionTracks[0];
+
+            int selected;
+            do
+            {
+                selected = Random.Shared.Next(MissExplosionTracks.Length);
+            } while (selected == _lastMissTrackIndex);
+
+            _lastMissTrackIndex = selected;
+            return MissExplosionTracks[selected];
+        }
     }
 
     private static string ResolveShipHitTrack(string? shipName)
@@ -171,7 +195,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         }
     }
 
-    private static bool TryPlayAudioTrack(string fileName)
+    private static bool TryPlayAudioTrack(string fileName, double volume)
     {
 #if WINDOWS
         try
@@ -185,6 +209,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
 
             lock (EffectsLock)
             {
+                EffectsPlayer.Volume = Math.Clamp(volume, 0, 1);
                 EffectsPlayer.Source = MediaSource.CreateFromUri(new Uri(path));
                 EffectsPlayer.Play();
             }
@@ -197,6 +222,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         }
 #else
         _ = fileName;
+        _ = volume;
         return false;
 #endif
     }

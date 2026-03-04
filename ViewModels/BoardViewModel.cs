@@ -65,9 +65,10 @@ public class BoardViewModel : ObservableObject
     private AnimationSpeed _selectedAnimationSpeed = AnimationSpeed.Normal;
     private ThemeOption _selectedThemeOption = ThemeTokenService.ThemeOptions[0];
     private bool _soundEnabled = true;
+    private double _soundFxVolume = 0.10;
     private bool _musicEnabled = true;
     private bool _hasConfiguredMusicPreference;
-    private double _musicVolume = 0.25;
+    private double _musicVolume = 0.10;
     private bool _hapticsEnabled = true;
     private bool _highContrastMode;
     private bool _largeTextMode;
@@ -501,6 +502,22 @@ public class BoardViewModel : ObservableObject
             SaveSettings();
         }
     }
+
+    public double SoundFxVolume
+    {
+        get => _soundFxVolume;
+        set
+        {
+            double clamped = Math.Clamp(value, 0, 1);
+            if (Math.Abs(_soundFxVolume - clamped) < 0.0001) return;
+            _soundFxVolume = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SoundFxVolumePercent));
+            SaveSettings();
+        }
+    }
+
+    public string SoundFxVolumePercent => $"{Math.Round(SoundFxVolume * 100):0}%";
 
     public bool MusicEnabled
     {
@@ -955,9 +972,10 @@ public class BoardViewModel : ObservableObject
         _selectedAnimationSpeed = settings.AnimationSpeed;
         _selectedThemeOption = ThemeTokenService.GetOption(settings.Theme);
         _soundEnabled = settings.SoundEnabled;
+        _soundFxVolume = settings.SoundFxVolume <= 0 ? 0.10 : settings.SoundFxVolume;
         _hasConfiguredMusicPreference = settings.HasConfiguredMusicPreference;
         _musicEnabled = _hasConfiguredMusicPreference ? settings.MusicEnabled : true;
-        _musicVolume = settings.MusicVolume;
+        _musicVolume = _hasConfiguredMusicPreference ? settings.MusicVolume : 0.10;
         _hapticsEnabled = settings.HapticsEnabled;
         _highContrastMode = settings.HighContrastMode;
         _largeTextMode = settings.LargeTextMode;
@@ -994,19 +1012,20 @@ public class BoardViewModel : ObservableObject
     private void SaveSettings()
     {
         _settingsStore.Save(new GameSettingsSnapshot(
-            SelectedDifficulty,
-            SelectedAnimationSpeed,
-            SoundEnabled,
-            HapticsEnabled,
-            HighContrastMode,
-            LargeTextMode,
-            ReduceMotionMode,
-            IsSettingsOpen,
-            _hasSeenCommandBriefing,
-            SelectedThemeOption.Theme,
-            MusicEnabled,
-            MusicVolume,
-            _hasConfiguredMusicPreference));
+            Difficulty: SelectedDifficulty,
+            AnimationSpeed: SelectedAnimationSpeed,
+            SoundEnabled: SoundEnabled,
+            HapticsEnabled: HapticsEnabled,
+            HighContrastMode: HighContrastMode,
+            LargeTextMode: LargeTextMode,
+            ReduceMotionMode: ReduceMotionMode,
+            SettingsPanelOpen: IsSettingsOpen,
+            HasSeenCommandBriefing: _hasSeenCommandBriefing,
+            Theme: SelectedThemeOption.Theme,
+            MusicEnabled: MusicEnabled,
+            MusicVolume: MusicVolume,
+            HasConfiguredMusicPreference: _hasConfiguredMusicPreference,
+            SoundFxVolume: SoundFxVolume));
     }
 
     private static double GetAnimationSpeedMultiplier(AnimationSpeed speed)
@@ -1253,7 +1272,7 @@ public class BoardViewModel : ObservableObject
 
     private void EmitFeedback(GameFeedbackCue cue, string? shipName = null)
     {
-        _feedbackService.Play(cue, SoundEnabled, HapticsEnabled, ReduceMotionMode, shipName);
+        _feedbackService.Play(cue, SoundEnabled, SoundFxVolume, HapticsEnabled, ReduceMotionMode, shipName);
     }
 
     private void EmitShotFeedback(ShotInfo shot)
@@ -1662,7 +1681,9 @@ public class BoardViewModel : ObservableObject
 
         PlacementPreviewBounds = BuildShipBounds(row, col, ship.Size, isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal);
         PlacementPreviewImageRotation = isVertical ? 90 : 0;
-        PlacementPreviewImageScale = ShipSpriteVisualProfile.ResolveScale(_selectedPlacementShip.Name);
+        PlacementPreviewImageScale = ShipSpriteVisualProfile.ResolveScale(
+            _selectedPlacementShip.Name,
+            isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal);
         PlacementPreviewImageSource = _selectedPlacementShip.ImageSource;
 
         bool isValidPlacement = CanPlaceShipAt(ship, row, col, isVertical);
@@ -1923,9 +1944,27 @@ public class BoardViewModel : ObservableObject
 
     private void RevealEnemyFleet()
     {
-        ShowEnemyFleet = true;
-        foreach (var sprite in EnemyShipSprites)
+        bool anyDestroyed = false;
+        foreach (var sprite in EnemyShipSprites.Where(ship => ship.IsSunk))
+        {
             sprite.Reveal();
+            anyDestroyed = true;
+        }
+
+        ShowEnemyFleet = anyDestroyed;
+    }
+
+    private void RevealEnemyShipOnSunk(string? sunkShipName)
+    {
+        if (string.IsNullOrWhiteSpace(sunkShipName))
+            return;
+
+        if (!_enemySpritesByName.TryGetValue(sunkShipName, out var enemySprite))
+            return;
+
+        enemySprite.MarkSunk();
+        enemySprite.Reveal();
+        ShowEnemyFleet = true;
     }
 
     private void OnEnemyCellTapped(BoardCellVm? targetCell)
@@ -1979,12 +2018,8 @@ public class BoardViewModel : ObservableObject
         StatusMessage = "Enemy is firing...";
         OnPropertyChanged(nameof(ScoreLine));
 
-        if (playerShot.Result == AttackResult.Sunk &&
-            playerShot.SunkShipName is not null &&
-            _enemySpritesByName.TryGetValue(playerShot.SunkShipName, out var enemySprite))
-        {
-            enemySprite.MarkSunk();
-        }
+        if (playerShot.Result == AttackResult.Sunk)
+            RevealEnemyShipOnSunk(playerShot.SunkShipName);
 
         if (_enemyBoard.AllShipsSunk)
         {
@@ -2038,12 +2073,8 @@ public class BoardViewModel : ObservableObject
             PlayerLastShotMessage = $"Your last shot: {targetCoordinate} - {playerShot.Message}";
             OnPropertyChanged(nameof(ScoreLine));
 
-            if (playerShot.Result == AttackResult.Sunk &&
-                playerShot.SunkShipName is not null &&
-                _enemySpritesByName.TryGetValue(playerShot.SunkShipName, out var enemySprite))
-            {
-                enemySprite.MarkSunk();
-            }
+            if (playerShot.Result == AttackResult.Sunk)
+                RevealEnemyShipOnSunk(playerShot.SunkShipName);
 
             if (_enemyBoard.AllShipsSunk)
             {
@@ -2378,6 +2409,7 @@ public class BoardCellVm : ObservableObject
     private ShotMarkerState _markerState;
     private bool _hasShip;
     private bool _isTargetLocked;
+    private double _hitMarkerRotation;
 
     public int Row { get; }
     public int Col { get; }
@@ -2395,6 +2427,7 @@ public class BoardCellVm : ObservableObject
             OnPropertyChanged(nameof(MarkerColor));
             OnPropertyChanged(nameof(MarkerImage));
             OnPropertyChanged(nameof(IsHitMarkerVisible));
+            OnPropertyChanged(nameof(IsFlameVisible));
             OnPropertyChanged(nameof(IsMissMarkerVisible));
             OnPropertyChanged(nameof(MarkerStateText));
             OnPropertyChanged(nameof(IsTargetLockVisible));
@@ -2443,6 +2476,7 @@ public class BoardCellVm : ObservableObject
     public Color MarkerColor => Colors.Transparent;
 
     public bool IsHitMarkerVisible => MarkerState == ShotMarkerState.Hit;
+    public bool IsFlameVisible => MarkerState == ShotMarkerState.Hit;
     public bool IsMissMarkerVisible => MarkerState == ShotMarkerState.Miss;
     public bool IsTargetLockVisible => IsTargetLocked && MarkerState == ShotMarkerState.None;
     public double MissPegSize => BoardViewModel.MissPegSize;
@@ -2469,6 +2503,18 @@ public class BoardCellVm : ObservableObject
     };
 
     public string? MarkerImage => MarkerState == ShotMarkerState.Hit ? "explosion.png" : null;
+    public double HitMarkerRotation
+    {
+        get => _hitMarkerRotation;
+        private set
+        {
+            if (Math.Abs(_hitMarkerRotation - value) < 0.001)
+                return;
+
+            _hitMarkerRotation = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string MarkerStateText => MarkerState switch
     {
@@ -2491,6 +2537,7 @@ public class BoardCellVm : ObservableObject
     public void ApplyShot(ShotInfo shot)
     {
         IsTargetLocked = false;
+        HitMarkerRotation = shot.IsHit ? ExplosionRotationProfile.NextQuarterTurn() : 0;
         MarkerState = shot.IsHit ? ShotMarkerState.Hit : ShotMarkerState.Miss;
     }
 
@@ -2513,6 +2560,7 @@ public class BoardCellVm : ObservableObject
             HasShip = false;
 
         IsTargetLocked = false;
+        HitMarkerRotation = 0;
         MarkerState = ShotMarkerState.None;
     }
 
@@ -2628,7 +2676,7 @@ public class ShipSpriteVm : ObservableObject
     {
         Name = name;
         ImageSource = imageSource;
-        ImageScale = ShipSpriteVisualProfile.ResolveScale(name);
+        ImageScale = ShipSpriteVisualProfile.ResolveScale(name, axis);
         StartRow = startRow;
         StartCol = startCol;
         Length = length;
@@ -2765,26 +2813,37 @@ public class PlacementShipVm : ObservableObject
 
 public readonly record struct BoardCoordinate(int Row, int Col);
 
+internal static class ExplosionRotationProfile
+{
+    private static readonly double[] QuarterTurns = { 0, 90, 180, 270 };
+
+    public static double NextQuarterTurn()
+    {
+        int index = Random.Shared.Next(QuarterTurns.Length);
+        return QuarterTurns[index];
+    }
+}
+
 internal static class ShipSpriteVisualProfile
 {
-    private static readonly IReadOnlyDictionary<string, double> ScaleByShipName =
-        new Dictionary<string, double>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, ShipOrientationScale> ScaleByShipName =
+        new Dictionary<string, ShipOrientationScale>(StringComparer.Ordinal)
         {
-            ["aircraftcarrier"] = 2.15,
-            ["battleship"] = 2.05,
-            ["cruiser"] = 2.2,
-            ["submarine"] = 2.25,
-            ["destroyer"] = 2.35
+            ["aircraftcarrier"] = new ShipOrientationScale(Horizontal: 2.55, Vertical: 3.45),
+            ["battleship"] = new ShipOrientationScale(Horizontal: 2.22, Vertical: 3.35),
+            ["cruiser"] = new ShipOrientationScale(Horizontal: 2.2, Vertical: 2.95),
+            ["submarine"] = new ShipOrientationScale(Horizontal: 2.25, Vertical: 2.9),
+            ["destroyer"] = new ShipOrientationScale(Horizontal: 2.35, Vertical: 2.35)
         };
 
-    public static double ResolveScale(string? shipName)
+    public static double ResolveScale(string? shipName, ShipAxis axis)
     {
         if (string.IsNullOrWhiteSpace(shipName))
             return 2.1;
 
         string normalized = NormalizeShipName(shipName);
-        return ScaleByShipName.TryGetValue(normalized, out double scale)
-            ? scale
+        return ScaleByShipName.TryGetValue(normalized, out var scale)
+            ? (axis == ShipAxis.Vertical ? scale.Vertical : scale.Horizontal)
             : 2.1;
     }
 
@@ -2796,6 +2855,8 @@ internal static class ShipSpriteVisualProfile
             .ToArray());
     }
 }
+
+internal readonly record struct ShipOrientationScale(double Horizontal, double Vertical);
 
 public sealed record ShipTemplate(string Name, int Size, string ImageSource);
 
