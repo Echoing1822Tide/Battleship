@@ -110,7 +110,7 @@ public class BoardViewModel : ObservableObject
     };
 
     public double BoardPixelSize => Size * CellSize;
-    public double BoardFramePixelSize => BoardPixelSize + BoardAxisRailSize + BoardRailSpacing;
+    public double BoardFramePixelSize => BoardPixelSize + (2 * BoardAxisRailSize) + (2 * BoardRailSpacing);
     public double CellPixelSize => CellSize;
     public double AxisRailPixelSize => BoardAxisRailSize;
     public double BoardRailSpacingPixelSize => BoardRailSpacing;
@@ -2937,7 +2937,7 @@ internal static class ShipSpriteVisualProfile
             ["aircraftcarrier"] = new ShipOrientationScale(Horizontal: 5.65, Vertical: 6.55),
             ["battleship"] = new ShipOrientationScale(Horizontal: 3.10, Vertical: 4.45),
             ["cruiser"] = new ShipOrientationScale(Horizontal: 2.90, Vertical: 3.85),
-            ["submarine"] = new ShipOrientationScale(Horizontal: 2.25, Vertical: 2.9),
+            ["submarine"] = new ShipOrientationScale(Horizontal: 3.25, Vertical: 4.15),
             ["destroyer"] = new ShipOrientationScale(Horizontal: 2.35, Vertical: 2.35)
         };
     private static readonly IReadOnlyDictionary<string, double> EndBleedByShipName =

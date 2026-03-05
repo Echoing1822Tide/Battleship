@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.16] - 2026-03-05
+
+### Fixed
+- Updated both board card grids to include symmetric spill rails so ship overhang can render on all 4 sides (left, top, right, bottom) without distorting board/cell layout.
+- Kept ship overlays and placement preview unclipped at board layer boundaries to preserve edge-overhang rendering consistency.
+
+### Changed
+- Increased submarine sprite scale in both orientations so submarine visual size better matches the other ship classes.
+
+### Release
+- `v1.6.16` is marked ready for **public release**.
+
 ## [1.6.15] - 2026-03-05
 
 ### Fixed

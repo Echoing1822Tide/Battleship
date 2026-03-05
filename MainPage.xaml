@@ -255,11 +255,13 @@
                               ColumnSpacing="{Binding BoardRailSpacingPixelSize}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="{Binding AxisRailPixelSize}" />
-                                <RowDefinition Height="*" />
+                                <RowDefinition Height="{Binding BoardPixelSize}" />
+                                <RowDefinition Height="{Binding AxisRailPixelSize}" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="{Binding AxisRailPixelSize}" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="{Binding BoardPixelSize}" />
+                                <ColumnDefinition Width="{Binding AxisRailPixelSize}" />
                             </Grid.ColumnDefinitions>
                             <HorizontalStackLayout Grid.Row="0"
                                                    Grid.Column="1"
@@ -337,6 +339,7 @@
                                                 HeightRequest="{Binding BoardPixelSize}"
                                                 HorizontalOptions="Start"
                                                 VerticalOptions="Start"
+                                                IsClippedToBounds="False"
                                                 BindableLayout.ItemsSource="{Binding EnemyShipSprites}"
                                                 IsVisible="{Binding ShowEnemyFleet}"
                                                 ZIndex="3">
@@ -644,11 +647,13 @@
                               ColumnSpacing="{Binding BoardRailSpacingPixelSize}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="{Binding AxisRailPixelSize}" />
-                                <RowDefinition Height="*" />
+                                <RowDefinition Height="{Binding BoardPixelSize}" />
+                                <RowDefinition Height="{Binding AxisRailPixelSize}" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="{Binding AxisRailPixelSize}" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="{Binding BoardPixelSize}" />
+                                <ColumnDefinition Width="{Binding AxisRailPixelSize}" />
                             </Grid.ColumnDefinitions>
                             <HorizontalStackLayout Grid.Row="0"
                                                    Grid.Column="1"
@@ -726,6 +731,7 @@
                                                 HeightRequest="{Binding BoardPixelSize}"
                                                 HorizontalOptions="Start"
                                                 VerticalOptions="Start"
+                                                IsClippedToBounds="False"
                                                 BindableLayout.ItemsSource="{Binding PlayerShipSprites}"
                                                 ZIndex="3">
                                     <BindableLayout.ItemTemplate>
@@ -796,6 +802,7 @@
                                                 HeightRequest="{Binding BoardPixelSize}"
                                                 HorizontalOptions="Start"
                                                 VerticalOptions="Start"
+                                                IsClippedToBounds="False"
                                                 IsVisible="{Binding IsPlacementPreviewVisible}"
                                                 ZIndex="4">
                                     <Grid AbsoluteLayout.LayoutBounds="{Binding PlacementPreviewBounds}"
