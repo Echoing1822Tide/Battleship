@@ -53,6 +53,7 @@ public class GameBoardTests
         ShotInfo miss = board.Attack(4, 4);
 
         Assert.Equal(AttackResult.Hit, hit.Result);
+        Assert.Equal("Destroyer", hit.SunkShipName);
         Assert.Equal(AttackResult.AlreadyTried, alreadyTried.Result);
         Assert.Equal(AttackResult.Sunk, sunk.Result);
         Assert.Equal("Destroyer", sunk.SunkShipName);

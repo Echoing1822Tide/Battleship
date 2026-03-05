@@ -438,6 +438,19 @@ public class BoardViewModelTests
         Assert.True(cruiserVertical.ImageScale > cruiserHorizontal.ImageScale);
     }
 
+    [Fact]
+    public void ShipSpriteVm_CruiserAndDestroyer_UseExtendedBoundsForGridOverlap()
+    {
+        var cruiser = new ShipSpriteVm("Cruiser", "cruiser_3_pegs.png", 2, 2, 3, ShipAxis.Horizontal);
+        var destroyer = new ShipSpriteVm("Destroyer", "destroyer_2_pegs.png", 4, 4, 2, ShipAxis.Horizontal);
+
+        double cruiserBaseWidth = (3 * BoardViewModel.CellSize) - (2 * BoardViewModel.ShipVisualInset);
+        double destroyerBaseWidth = (2 * BoardViewModel.CellSize) - (2 * BoardViewModel.ShipVisualInset);
+
+        Assert.True(cruiser.Bounds.Width > cruiserBaseWidth);
+        Assert.True(destroyer.Bounds.Width > destroyerBaseWidth);
+    }
+
     private static void PlaceAllShips(BoardViewModel vm)
     {
         PlaceShip(vm, "Aircraft Carrier", row: 0, col: 0, vertical: false);

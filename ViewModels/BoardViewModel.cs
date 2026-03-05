@@ -1680,7 +1680,12 @@ public class BoardViewModel : ObservableObject
         int row = _placementPreviewAnchorCell.Row;
         int col = _placementPreviewAnchorCell.Col;
 
-        PlacementPreviewBounds = BuildShipBounds(row, col, ship.Size, isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal);
+        PlacementPreviewBounds = BuildShipBounds(
+            row,
+            col,
+            ship.Size,
+            isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal,
+            ship.Name);
         PlacementPreviewImageRotation = isVertical ? 90 : 0;
         PlacementPreviewImageScale = ShipSpriteVisualProfile.ResolveScale(
             _selectedPlacementShip.Name,
@@ -1850,14 +1855,24 @@ public class BoardViewModel : ObservableObject
         }
     }
 
-    private static Rect BuildShipBounds(int startRow, int startCol, int shipSize, ShipAxis axis)
+    private static Rect BuildShipBounds(int startRow, int startCol, int shipSize, ShipAxis axis, string? shipName = null)
     {
         double cell = CellSize;
         double inset = ShipVisualInset;
+        double endBleed = ShipSpriteVisualProfile.ResolveEndBleed(shipName);
+        double crossBleed = ShipSpriteVisualProfile.ResolveCrossAxisBleed(shipName);
         double minDimension = Math.Max(2, cell - (2 * inset));
         return axis == ShipAxis.Vertical
-            ? new Rect((startCol * cell) + inset, (startRow * cell) + inset, minDimension, (shipSize * cell) - (2 * inset))
-            : new Rect((startCol * cell) + inset, (startRow * cell) + inset, (shipSize * cell) - (2 * inset), minDimension);
+            ? new Rect(
+                (startCol * cell) + inset - crossBleed,
+                (startRow * cell) + inset - endBleed,
+                minDimension + (2 * crossBleed),
+                (shipSize * cell) - (2 * inset) + (2 * endBleed))
+            : new Rect(
+                (startCol * cell) + inset - endBleed,
+                (startRow * cell) + inset - crossBleed,
+                (shipSize * cell) - (2 * inset) + (2 * endBleed),
+                minDimension + (2 * crossBleed));
     }
 
     private void PlaceFleetRandomly(GameBoard board, IEnumerable<Ship> fleet, bool allowVertical)
@@ -2671,10 +2686,20 @@ public class ShipSpriteVm : ObservableObject
         {
             double cell = BoardViewModel.CellSize;
             double inset = BoardViewModel.ShipVisualInset;
+            double endBleed = ShipSpriteVisualProfile.ResolveEndBleed(Name);
+            double crossBleed = ShipSpriteVisualProfile.ResolveCrossAxisBleed(Name);
             double minDimension = Math.Max(2, cell - (2 * inset));
             return Axis == ShipAxis.Vertical
-                ? new Rect((StartCol * cell) + inset, (StartRow * cell) + inset, minDimension, (Length * cell) - (2 * inset))
-                : new Rect((StartCol * cell) + inset, (StartRow * cell) + inset, (Length * cell) - (2 * inset), minDimension);
+                ? new Rect(
+                    (StartCol * cell) + inset - crossBleed,
+                    (StartRow * cell) + inset - endBleed,
+                    minDimension + (2 * crossBleed),
+                    (Length * cell) - (2 * inset) + (2 * endBleed))
+                : new Rect(
+                    (StartCol * cell) + inset - endBleed,
+                    (StartRow * cell) + inset - crossBleed,
+                    (Length * cell) - (2 * inset) + (2 * endBleed),
+                    minDimension + (2 * crossBleed));
         }
     }
 
@@ -2906,6 +2931,18 @@ internal static class ShipSpriteVisualProfile
             ["submarine"] = new ShipOrientationScale(Horizontal: 2.25, Vertical: 2.9),
             ["destroyer"] = new ShipOrientationScale(Horizontal: 2.35, Vertical: 2.35)
         };
+    private static readonly IReadOnlyDictionary<string, double> EndBleedByShipName =
+        new Dictionary<string, double>(StringComparer.Ordinal)
+        {
+            ["cruiser"] = 8.0,
+            ["destroyer"] = 7.0
+        };
+    private static readonly IReadOnlyDictionary<string, double> CrossBleedByShipName =
+        new Dictionary<string, double>(StringComparer.Ordinal)
+        {
+            ["cruiser"] = 1.8,
+            ["destroyer"] = 1.6
+        };
 
     public static double ResolveScale(string? shipName, ShipAxis axis)
     {
@@ -2916,6 +2953,28 @@ internal static class ShipSpriteVisualProfile
         return ScaleByShipName.TryGetValue(normalized, out var scale)
             ? (axis == ShipAxis.Vertical ? scale.Vertical : scale.Horizontal)
             : 2.1;
+    }
+
+    public static double ResolveEndBleed(string? shipName)
+    {
+        if (string.IsNullOrWhiteSpace(shipName))
+            return 0;
+
+        string normalized = NormalizeShipName(shipName);
+        return EndBleedByShipName.TryGetValue(normalized, out var bleed)
+            ? bleed
+            : 0;
+    }
+
+    public static double ResolveCrossAxisBleed(string? shipName)
+    {
+        if (string.IsNullOrWhiteSpace(shipName))
+            return 0;
+
+        string normalized = NormalizeShipName(shipName);
+        return CrossBleedByShipName.TryGetValue(normalized, out var bleed)
+            ? bleed
+            : 0;
     }
 
     private static string NormalizeShipName(string shipName)

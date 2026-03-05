@@ -339,7 +339,7 @@
                                                 VerticalOptions="Start"
                                                 BindableLayout.ItemsSource="{Binding EnemyShipSprites}"
                                                 IsVisible="{Binding ShowEnemyFleet}"
-                                                ZIndex="1">
+                                                ZIndex="3">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <Border AbsoluteLayout.LayoutBounds="{Binding Bounds}"

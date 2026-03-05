@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.12] - 2026-03-05
+
+### Changed
+- Enemy targeting follow-up behavior was refined again so post-hit shots consistently bias nearby cells, with smarter directional prioritization preserved for `Hard`.
+- Cruiser and Destroyer sprite bounds/placement preview bounds now include intentional end-bleed so ships can visually hang over neighboring grid squares instead of clipping at the bow/stern.
+
+### Fixed
+- Enemy sunk ship visibility now persists reliably during player turns by ensuring the revealed enemy ship layer remains above the enemy board cell layer.
+- Confirmed submarine-hit audio routing now consistently uses `daviddumaisaudio-large-underwater-explosion-190270.mp3` whenever either side's submarine is struck.
+
+### Release
+- `v1.6.12` is marked ready for **public release**.
+
 ## [1.6.11] - 2026-03-05
 
 ### Changed
