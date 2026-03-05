@@ -956,6 +956,79 @@
                                         </DataTemplate>
                                     </CollectionView.ItemTemplate>
                                 </CollectionView>
+
+                                <CollectionView x:Name="PlayerBoardImpactOverlayView"
+                                                ItemsSource="{Binding PlayerCells}"
+                                                SelectionMode="None"
+                                                IsEnabled="False"
+                                                InputTransparent="True"
+                                                WidthRequest="{Binding BoardPixelSize}"
+                                                HeightRequest="{Binding BoardPixelSize}"
+                                                Margin="0"
+                                                VerticalScrollBarVisibility="Never"
+                                                HorizontalScrollBarVisibility="Never"
+                                                ZIndex="5">
+                                    <CollectionView.ItemsLayout>
+                                        <GridItemsLayout Orientation="Vertical"
+                                                         Span="10"
+                                                         HorizontalItemSpacing="0"
+                                                         VerticalItemSpacing="0" />
+                                    </CollectionView.ItemsLayout>
+
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid WidthRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
+                                                  HeightRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
+                                                  InputTransparent="True">
+                                                <Border IsVisible="{Binding IsFlameVisible}"
+                                                        Margin="4"
+                                                        Opacity="0.86"
+                                                        StrokeThickness="0"
+                                                        StrokeShape="RoundRectangle 8">
+                                                    <Border.Background>
+                                                        <RadialGradientBrush Center="0.5,0.72" Radius="0.72">
+                                                            <GradientStop Color="#FFF5B043" Offset="0.0" />
+                                                            <GradientStop Color="#F4FF7D00" Offset="0.42" />
+                                                            <GradientStop Color="#CAD94700" Offset="0.74" />
+                                                            <GradientStop Color="#00D94700" Offset="1.0" />
+                                                        </RadialGradientBrush>
+                                                    </Border.Background>
+                                                    <Border.Behaviors>
+                                                        <behaviors:CellFlameAnimationBehavior />
+                                                    </Border.Behaviors>
+                                                </Border>
+
+                                                <Grid IsVisible="{Binding IsHitMarkerVisible}"
+                                                      InputTransparent="True">
+                                                    <Border Margin="2"
+                                                            StrokeThickness="0"
+                                                            Opacity="0.88"
+                                                            StrokeShape="RoundRectangle 10">
+                                                        <Border.Background>
+                                                            <RadialGradientBrush Center="0.5,0.5" Radius="0.75">
+                                                                <GradientStop Color="#FFFFE78C" Offset="0.0" />
+                                                                <GradientStop Color="#E9FF9D36" Offset="0.34" />
+                                                                <GradientStop Color="#BEFF4E00" Offset="0.66" />
+                                                                <GradientStop Color="#00FF2A00" Offset="1.0" />
+                                                            </RadialGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
+                                                    <Image Source="{Binding MarkerImage}"
+                                                           IsVisible="{Binding IsHitMarkerVisible}"
+                                                           Rotation="{Binding HitMarkerRotation}"
+                                                           Aspect="AspectFit"
+                                                           Margin="-1"
+                                                           Opacity="0.98">
+                                                        <Image.Behaviors>
+                                                            <behaviors:CellImpactAnimationBehavior />
+                                                        </Image.Behaviors>
+                                                    </Image>
+                                                </Grid>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
                             </Grid>
                         </Grid>
                     </Border>

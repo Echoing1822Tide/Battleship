@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.10] - 2026-03-05
+
+### Fixed
+- Restored enemy-hit explosion visibility on the `Your Fleet` board by rendering hit impact effects above player ship sprites.
+
+### Release
+- `v1.6.10` is marked ready for **public release**.
+
 ## [1.6.9] - 2026-03-05
 
 ### Added

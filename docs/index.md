@@ -4,11 +4,11 @@ Desktop Battleship game built with .NET MAUI.
 
 ## Current Release
 
-- `v1.6.8`
+- `v1.6.10`
 - Public release build with command-center board-first UI and top-bar controls
-- Animated board-view transitions (`Fire Control` / `Fleet Ops`)
+- Enemy-hit explosions on `Your Fleet` now render above ship sprites for reliable strike feedback
 - Manual fleet placement with right-click rotation + live placement preview
-- Carrier sprite now renders substantially larger with intentional overlap styling
+- Carrier sprite remains at larger overlap styling for improved fleet readability
 
 ## Quick Start
 
