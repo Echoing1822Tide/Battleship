@@ -314,6 +314,9 @@
                                   VerticalOptions="Start"
                                   IsClippedToBounds="False">
                                 <Grid ZIndex="0">
+                                    <Grid.Behaviors>
+                                        <behaviors:BoardWaterFlowAnimationBehavior />
+                                    </Grid.Behaviors>
                                     <Border Stroke="{DynamicResource GameColorBorder}"
                                             StrokeThickness="1.1"
                                             StrokeShape="{DynamicResource GameBoardFrameShape}">
@@ -333,6 +336,58 @@
                                             StrokeThickness="0.7"
                                             StrokeShape="{DynamicResource GameBoardFrameShape}"
                                             BackgroundColor="#0E3D6688" />
+                                    <Border Margin="4"
+                                            Stroke="#35FFFFFF"
+                                            StrokeThickness="0.65"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            BackgroundColor="#061C2C3A"
+                                            InputTransparent="True" />
+                                    <Border ClassId="BoardWaveLayerA"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.58">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0.12" EndPoint="1,0.88">
+                                                <GradientStop Color="#00FFFFFF" Offset="0.0" />
+                                                <GradientStop Color="#30C8F6FF" Offset="0.2" />
+                                                <GradientStop Color="#0D6FB2D3" Offset="0.44" />
+                                                <GradientStop Color="#2AB6ECFF" Offset="0.66" />
+                                                <GradientStop Color="#00102736" Offset="1.0" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Border ClassId="BoardWaveLayerB"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.42">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.95,0.08" EndPoint="0.12,0.95">
+                                                <GradientStop Color="#00000000" Offset="0.0" />
+                                                <GradientStop Color="#2A79D3EA" Offset="0.3" />
+                                                <GradientStop Color="#082F8DB0" Offset="0.54" />
+                                                <GradientStop Color="#2696E4F6" Offset="0.74" />
+                                                <GradientStop Color="#00000000" Offset="1.0" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Border ClassId="BoardDepthVignette"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.62">
+                                        <Border.Background>
+                                            <RadialGradientBrush Center="0.5,0.5" Radius="0.92">
+                                                <GradientStop Color="#00000000" Offset="0.0" />
+                                                <GradientStop Color="#0F000000" Offset="0.72" />
+                                                <GradientStop Color="#32000000" Offset="1.0" />
+                                            </RadialGradientBrush>
+                                        </Border.Background>
+                                    </Border>
                                 </Grid>
                                 <AbsoluteLayout InputTransparent="True"
                                                 WidthRequest="{Binding BoardPixelSize}"
@@ -436,6 +491,20 @@
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Enemy cell. Tap to fire.">
                                                 <Grid>
+                                                    <Border Margin="1"
+                                                            InputTransparent="True"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="{DynamicResource GameBoardCellShape}"
+                                                            Opacity="0.46">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                <GradientStop Color="#28FFFFFF" Offset="0.0" />
+                                                                <GradientStop Color="#0F89B5D0" Offset="0.4" />
+                                                                <GradientStop Color="#1A000000" Offset="1.0" />
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
                                                     <Border IsVisible="{Binding IsFlameVisible}"
                                                             Margin="4"
                                                             Opacity="0.86"
@@ -706,6 +775,9 @@
                                   VerticalOptions="Start"
                                   IsClippedToBounds="False">
                                 <Grid ZIndex="0">
+                                    <Grid.Behaviors>
+                                        <behaviors:BoardWaterFlowAnimationBehavior />
+                                    </Grid.Behaviors>
                                     <Border Stroke="{DynamicResource GameColorBorder}"
                                             StrokeThickness="1.1"
                                             StrokeShape="{DynamicResource GameBoardFrameShape}">
@@ -725,6 +797,58 @@
                                             StrokeThickness="0.7"
                                             StrokeShape="{DynamicResource GameBoardFrameShape}"
                                             BackgroundColor="#0E3D6688" />
+                                    <Border Margin="4"
+                                            Stroke="#35FFFFFF"
+                                            StrokeThickness="0.65"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            BackgroundColor="#061C2C3A"
+                                            InputTransparent="True" />
+                                    <Border ClassId="BoardWaveLayerA"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.58">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0.12" EndPoint="1,0.88">
+                                                <GradientStop Color="#00FFFFFF" Offset="0.0" />
+                                                <GradientStop Color="#30C8F6FF" Offset="0.2" />
+                                                <GradientStop Color="#0D6FB2D3" Offset="0.44" />
+                                                <GradientStop Color="#2AB6ECFF" Offset="0.66" />
+                                                <GradientStop Color="#00102736" Offset="1.0" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Border ClassId="BoardWaveLayerB"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.42">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.95,0.08" EndPoint="0.12,0.95">
+                                                <GradientStop Color="#00000000" Offset="0.0" />
+                                                <GradientStop Color="#2A79D3EA" Offset="0.3" />
+                                                <GradientStop Color="#082F8DB0" Offset="0.54" />
+                                                <GradientStop Color="#2696E4F6" Offset="0.74" />
+                                                <GradientStop Color="#00000000" Offset="1.0" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Border ClassId="BoardDepthVignette"
+                                            Margin="5"
+                                            StrokeThickness="0"
+                                            StrokeShape="{DynamicResource GameBoardFrameShape}"
+                                            InputTransparent="True"
+                                            Opacity="0.62">
+                                        <Border.Background>
+                                            <RadialGradientBrush Center="0.5,0.5" Radius="0.92">
+                                                <GradientStop Color="#00000000" Offset="0.0" />
+                                                <GradientStop Color="#0F000000" Offset="0.72" />
+                                                <GradientStop Color="#32000000" Offset="1.0" />
+                                            </RadialGradientBrush>
+                                        </Border.Background>
+                                    </Border>
                                 </Grid>
                                 <AbsoluteLayout InputTransparent="True"
                                                 WidthRequest="{Binding BoardPixelSize}"
@@ -855,6 +979,20 @@
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Your fleet cell. Left-click to place the selected ship. Right-click to rotate orientation.">
                                                 <Grid>
+                                                    <Border Margin="1"
+                                                            InputTransparent="True"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="{DynamicResource GameBoardCellShape}"
+                                                            Opacity="0.46">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                <GradientStop Color="#28FFFFFF" Offset="0.0" />
+                                                                <GradientStop Color="#0F89B5D0" Offset="0.4" />
+                                                                <GradientStop Color="#1A000000" Offset="1.0" />
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
                                                     <Border IsVisible="{Binding IsFlameVisible}"
                                                             Margin="4"
                                                             Opacity="0.86"

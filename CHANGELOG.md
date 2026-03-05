@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.18] - 2026-03-05
+
+### Changed
+- Board presentation was upgraded to an ocean-water look with animated wave shimmer layers inside each board frame.
+- Added a dedicated `BoardWaterFlowAnimationBehavior` so wave motion stays visual-only and respects existing animation speed/reduce-motion settings.
+- Enhanced board-cell surface lighting for a richer watery depth while preserving ship/marker overlay ordering and gameplay layout geometry.
+
+### Release
+- `v1.6.18` is marked ready for **public release**.
+
 ## [1.6.17] - 2026-03-05
 
 ### Fixed
