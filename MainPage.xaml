@@ -310,7 +310,7 @@
                                   HeightRequest="{Binding BoardPixelSize}"
                                   HorizontalOptions="Start"
                                   VerticalOptions="Start"
-                                  IsClippedToBounds="True">
+                                  IsClippedToBounds="False">
                                 <Grid ZIndex="0">
                                     <Border Stroke="{DynamicResource GameColorBorder}"
                                             StrokeThickness="1.1"
@@ -699,7 +699,7 @@
                                   HeightRequest="{Binding BoardPixelSize}"
                                   HorizontalOptions="Start"
                                   VerticalOptions="Start"
-                                  IsClippedToBounds="True">
+                                  IsClippedToBounds="False">
                                 <Grid ZIndex="0">
                                     <Border Stroke="{DynamicResource GameColorBorder}"
                                             StrokeThickness="1.1"

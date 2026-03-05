@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.15] - 2026-03-05
+
+### Fixed
+- Removed board-edge clipping of ship overhang by allowing board host containers to render outside bounds while preserving board dimensions.
+- Ship bow/stern/side overlap now renders cleanly when placed on outer rows/columns (both enemy and player boards), without shifting layout.
+
+### Release
+- `v1.6.15` is marked ready for **public release**.
+
 ## [1.6.14] - 2026-03-05
 
 ### Fixed
