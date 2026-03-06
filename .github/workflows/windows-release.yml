@@ -1,0 +1,74 @@
+name: Windows Release Zip
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-zip:
+    runs-on: windows-latest
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui --skip-sign-check
+
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          [xml]$projectXml = Get-Content BattleshipMaui.csproj
+          $projectVersion = @($projectXml.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          $expectedTag = "v$projectVersion"
+
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag $env:GITHUB_REF_NAME does not match project version $expectedTag."
+          }
+
+      - name: Publish self-contained release zip
+        shell: pwsh
+        run: .\scripts\Publish-WindowsZip.ps1
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-zip
+          path: |
+            artifacts/release/*.zip
+            artifacts/release/*.sha256
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $assets = Get-ChildItem artifacts/release/*.zip, artifacts/release/*.sha256 | Select-Object -ExpandProperty FullName
+
+          gh release view $tag *> $null
+
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $assets --clobber
+          }
+          else {
+            gh release create $tag $assets --title "Battleship MAUI $tag" --generate-notes
+          }

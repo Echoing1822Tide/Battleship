@@ -11,9 +11,11 @@ A polished, fully playable Battleship game built with .NET MAUI and a C# game co
 - Current public app release version: `v1.6.27`
 - Release history and iteration details: [CHANGELOG.md](./CHANGELOG.md)
 - Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.6.27`)
+- Public release distribution format: self-contained Windows `win-x64` zip
 
 ## Release Readiness
-- `v1.6.27` is **ready for public release**.
+- `v1.6.27` is in **Public Release** status.
+- Version tags now produce a self-contained Windows `win-x64` zip so players can extract it and launch `BattleshipMaui.exe` immediately.
 
 ## Highlights
 - Windows published app startup is fixed with a stable fixed-grid board rendering path, so the local `.exe` no longer closes on launch.
@@ -60,12 +62,32 @@ dotnet build BattleshipMaui.sln
 dotnet run --project BattleshipMaui.csproj
 ```
 
-Release publish + run `.exe` directly:
+Release publish for a public zip download:
 ```powershell
-dotnet publish BattleshipMaui.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained false
+.\scripts\Publish-WindowsZip.ps1
 ```
-Then launch:
-`bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\BattleshipMaui.exe`
+
+This creates:
+- `artifacts\release\BattleshipMaui-v1.6.27-win-x64.zip`
+- `artifacts\release\BattleshipMaui-v1.6.27-win-x64.sha256`
+
+The zip is built as:
+- `.NET self-contained`
+- `WindowsAppSDKSelfContained=true`
+- unpackaged Windows desktop output
+
+After extracting the zip, launch:
+`BattleshipMaui-v1.6.27-win-x64\BattleshipMaui.exe`
+
+Raw CLI equivalent:
+```powershell
+dotnet publish BattleshipMaui.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained true -p:WindowsAppSDKSelfContained=true -p:PublishReadyToRun=false -p:PublishDir=artifacts\release\BattleshipMaui-v1.6.27-win-x64\
+```
+
+GitHub public release flow:
+- Push a version tag such as `v1.6.27`.
+- GitHub Actions runs `.github/workflows/windows-release.yml`.
+- The workflow uploads the zip and SHA-256 file to the GitHub Release for that tag.
 
 If startup fails on Windows, review:
 `%LOCALAPPDATA%\BattleshipMaui\logs\crash.log`

@@ -5,7 +5,8 @@ Desktop Battleship game built with .NET MAUI.
 ## Current Release
 
 - `v1.6.27`
-- Public release build with the verified Windows startup fix for the published `.exe`
+- Public Release build with the verified Windows startup fix for the published `.exe`
+- Version tags now produce a self-contained Windows zip that can be extracted and launched locally via `BattleshipMaui.exe`
 - Windows board rendering now combines fixed `10x10` input grids with deeper 3D ocean surfaces, macro wave drift, and lightweight overlay effects
 - Hit explosions now use the real `explosion.png` art on both boards without reintroducing the WinUI layout cycle
 - Enemy and player pre-impact targeting now use a `3x3` pulsing acquisition circle that converges on the strike cell
@@ -36,11 +37,15 @@ Desktop Battleship game built with .NET MAUI.
 ## Publish Locally
 
 ```powershell
-dotnet publish BattleshipMaui.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained false
+.\scripts\Publish-WindowsZip.ps1
 ```
 
 Launch:
-`bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\BattleshipMaui.exe`
+`artifacts\release\BattleshipMaui-v1.6.27-win-x64\BattleshipMaui.exe`
+
+GitHub Releases:
+- Push a `v*` tag to run `.github/workflows/windows-release.yml`.
+- The workflow publishes a self-contained `win-x64` zip and matching `.sha256` asset to the tagged release.
 
 ## Current CI Scope
 
