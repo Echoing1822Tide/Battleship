@@ -123,7 +123,7 @@ public sealed class ShipSunkSmokeAnimationBehavior : Behavior<VisualElement>
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 view.AbortAnimation("ShipSunkSmoke");
-                view.Opacity = AnimationRuntimeSettings.ReduceMotion ? 0.48 : 0.36;
+                view.Opacity = AnimationRuntimeSettings.ReduceMotion ? 0.66 : 0.54;
                 view.TranslationX = 0;
                 view.TranslationY = 0;
                 view.Scale = 1;
@@ -137,11 +137,11 @@ public sealed class ShipSunkSmokeAnimationBehavior : Behavior<VisualElement>
                     continue;
                 }
 
-                double driftX = (Random.Shared.NextDouble() - 0.5) * 2.6;
-                double liftY = -1.7 - (Random.Shared.NextDouble() * 2.1);
-                double peakOpacity = 0.48 + (Random.Shared.NextDouble() * 0.18);
-                double valleyOpacity = 0.32 + (Random.Shared.NextDouble() * 0.14);
-                double peakScale = 1.03 + (Random.Shared.NextDouble() * 0.1);
+                double driftX = (Random.Shared.NextDouble() - 0.5) * 3.4;
+                double liftY = -2.3 - (Random.Shared.NextDouble() * 2.7);
+                double peakOpacity = 0.72 + (Random.Shared.NextDouble() * 0.14);
+                double valleyOpacity = 0.5 + (Random.Shared.NextDouble() * 0.12);
+                double peakScale = 1.08 + (Random.Shared.NextDouble() * 0.12);
 
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {

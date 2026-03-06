@@ -2,18 +2,18 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/Framework-.NET%20MAUI-0f6cbd)](https://learn.microsoft.com/dotnet/maui/)
-[![Release](https://img.shields.io/badge/Release-v1.6.25-2ea44f)](#versioning--releases)
+[![Release](https://img.shields.io/badge/Release-v1.6.26-2ea44f)](#versioning--releases)
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE.md)
 
 A polished, fully playable Battleship game built with .NET MAUI and a C# game core.
 
 ## Versioning & Releases
-- Current public app release version: `v1.6.25`
+- Current public app release version: `v1.6.26`
 - Release history and iteration details: [CHANGELOG.md](./CHANGELOG.md)
-- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.6.25`)
+- Recommended GitHub release tag format: `vMAJOR.MINOR.PATCH` (example: `v1.6.26`)
 
 ## Release Readiness
-- `v1.6.25` is **ready for public release**.
+- `v1.6.26` is **ready for public release**.
 
 ## Highlights
 - Windows published app startup is fixed with a stable fixed-grid board rendering path, so the local `.exe` no longer closes on launch.
@@ -21,7 +21,7 @@ A polished, fully playable Battleship game built with .NET MAUI and a C# game co
 - Board surfaces now use deeper animated ocean rendering with subsurface contours, crest-shadow layering, specular sweeps, and beveled 3D cell shading while keeping the stable startup fix.
 - Hit explosions now use the real `Resources/Images/explosion.png` art in the board overlay pipeline, and miss splash markers remain renderer-driven instead of returning to the old per-cell visual tree.
 - Enemy hover targeting now shows a `3x3` pulsing acquisition circle that converges onto the target, and the same pre-impact lock indicator is used during both player cinematic shots and enemy targeting beats.
-- Sunk ships now emit continuous smoke on every sunk grid block while the ship-level smoke pass stays active on revealed sunk sprites.
+- Sunk ships now emit denser, brighter smoke on every sunk grid block, and the ship-level smoke haze is more visible on revealed sunk sprites.
 - Aircraft carrier sprite sizing was trimmed slightly so the carrier no longer overwhelms the board compared with the rest of the fleet.
 - Ship image rendering now uses a restrained visual-fit alignment profile so player ships, enemy reveals, and placement preview stay closer to the reference board compositions instead of overcorrecting to raw asset bounds.
 - Side-by-side `Enemy Waters` and `Your Fleet` boards keep `A-J` / `1-10` rails aligned with ship overlays.

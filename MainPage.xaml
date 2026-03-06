@@ -435,15 +435,29 @@
                                                     <Grid.Behaviors>
                                                         <behaviors:ShipSunkSmokeAnimationBehavior />
                                                     </Grid.Behaviors>
+                                                    <Border Margin="-2"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 10"
+                                                            Opacity="0.34">
+                                                        <Border.Background>
+                                                            <RadialGradientBrush Center="0.5,0.68" Radius="0.92">
+                                                                <GradientStop Color="#8EE2E8EE" Offset="0.0" />
+                                                                <GradientStop Color="#78AAB5C4" Offset="0.38" />
+                                                                <GradientStop Color="#485A6573" Offset="0.72" />
+                                                                <GradientStop Color="#0039424E" Offset="1.0" />
+                                                            </RadialGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
                                                     <Border Margin="2"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 10"
-                                                            Opacity="0.36">
+                                                            Opacity="0.58">
                                                         <Border.Background>
                                                             <RadialGradientBrush Center="0.5,0.62" Radius="0.72">
-                                                                <GradientStop Color="#70A9B1BC" Offset="0.0" />
-                                                                <GradientStop Color="#5C7E8795" Offset="0.42" />
-                                                                <GradientStop Color="#30525A66" Offset="0.74" />
+                                                                <GradientStop Color="#9AD5DCE4" Offset="0.0" />
+                                                                <GradientStop Color="#7D909AA8" Offset="0.34" />
+                                                                <GradientStop Color="#4A5C6673" Offset="0.7" />
                                                                 <GradientStop Color="#00434A56" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>
@@ -452,11 +466,11 @@
                                                     <Border Margin="6"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 8"
-                                                            Opacity="0.28">
+                                                            Opacity="0.38">
                                                         <Border.Background>
                                                             <RadialGradientBrush Center="0.48,0.48" Radius="0.58">
-                                                                <GradientStop Color="#66D0D5DC" Offset="0.0" />
-                                                                <GradientStop Color="#2A8A909A" Offset="0.7" />
+                                                                <GradientStop Color="#88E3E8EE" Offset="0.0" />
+                                                                <GradientStop Color="#438A909A" Offset="0.7" />
                                                                 <GradientStop Color="#00707580" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>
@@ -710,15 +724,29 @@
                                                     <Grid.Behaviors>
                                                         <behaviors:ShipSunkSmokeAnimationBehavior />
                                                     </Grid.Behaviors>
+                                                    <Border Margin="-2"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 10"
+                                                            Opacity="0.34">
+                                                        <Border.Background>
+                                                            <RadialGradientBrush Center="0.5,0.68" Radius="0.92">
+                                                                <GradientStop Color="#8EE2E8EE" Offset="0.0" />
+                                                                <GradientStop Color="#78AAB5C4" Offset="0.38" />
+                                                                <GradientStop Color="#485A6573" Offset="0.72" />
+                                                                <GradientStop Color="#0039424E" Offset="1.0" />
+                                                            </RadialGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
                                                     <Border Margin="2"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 10"
-                                                            Opacity="0.36">
+                                                            Opacity="0.58">
                                                         <Border.Background>
                                                             <RadialGradientBrush Center="0.5,0.62" Radius="0.72">
-                                                                <GradientStop Color="#70A9B1BC" Offset="0.0" />
-                                                                <GradientStop Color="#5C7E8795" Offset="0.42" />
-                                                                <GradientStop Color="#30525A66" Offset="0.74" />
+                                                                <GradientStop Color="#9AD5DCE4" Offset="0.0" />
+                                                                <GradientStop Color="#7D909AA8" Offset="0.34" />
+                                                                <GradientStop Color="#4A5C6673" Offset="0.7" />
                                                                 <GradientStop Color="#00434A56" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>
@@ -727,11 +755,11 @@
                                                     <Border Margin="6"
                                                             StrokeThickness="0"
                                                             StrokeShape="RoundRectangle 8"
-                                                            Opacity="0.28">
+                                                            Opacity="0.38">
                                                         <Border.Background>
                                                             <RadialGradientBrush Center="0.48,0.48" Radius="0.58">
-                                                                <GradientStop Color="#66D0D5DC" Offset="0.0" />
-                                                                <GradientStop Color="#2A8A909A" Offset="0.7" />
+                                                                <GradientStop Color="#88E3E8EE" Offset="0.0" />
+                                                                <GradientStop Color="#438A909A" Offset="0.7" />
                                                                 <GradientStop Color="#00707580" Offset="1.0" />
                                                             </RadialGradientBrush>
                                                         </Border.Background>

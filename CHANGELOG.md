@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.26] - 2026-03-05
+
+### Changed
+- Retuned sunk-smoke rendering to use denser board plumes, larger haze layers, and stronger ember glow so destroyed ships read more clearly during play.
+- Increased ship-level sunk smoke opacity and drift so revealed sunk sprites keep a more visible smoke column without altering the stable board layout.
+
+### Release
+- `v1.6.26` is marked ready for **public release**.
+
 ## [1.6.25] - 2026-03-05
 
 ### Changed

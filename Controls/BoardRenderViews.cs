@@ -525,65 +525,73 @@ public sealed class BoardEffectsView : BoardRenderViewBase
     private static void DrawSunkSmoke(ICanvas canvas, RectF rect, float phase, BoardCellVm cell)
     {
         float cellSeed = (cell.Row * 0.73f) + (cell.Col * 0.41f);
-        Color smokeShadow = WithAlpha(Color.FromArgb("#313741"), 0.16f);
-        Color smokeDense = WithAlpha(Color.FromArgb("#69717d"), 0.18f);
-        Color smokeSoft = WithAlpha(Color.FromArgb("#d9e0e8"), 0.14f);
-        Color ember = WithAlpha(Color.FromArgb("#ff9f4a"), 0.11f);
-        Color heatGlow = WithAlpha(Color.FromArgb("#ffcf7b"), 0.06f);
+        Color smokeShadow = WithAlpha(Color.FromArgb("#20252d"), 0.24f);
+        Color smokeDense = WithAlpha(Color.FromArgb("#6f7884"), 0.32f);
+        Color smokeSoft = WithAlpha(Color.FromArgb("#e5ebf1"), 0.24f);
+        Color ember = WithAlpha(Color.FromArgb("#ff9f4a"), 0.16f);
+        Color heatGlow = WithAlpha(Color.FromArgb("#ffd78a"), 0.11f);
+        Color smokeSheet = WithAlpha(Color.FromArgb("#bfc7d1"), 0.18f);
+
+        canvas.FillColor = smokeSheet;
+        canvas.FillEllipse(
+            rect.Center.X - (rect.Width * 0.42f),
+            rect.Center.Y - (rect.Height * 0.02f),
+            rect.Width * 0.84f,
+            rect.Height * 0.36f);
 
         canvas.FillColor = heatGlow;
         canvas.FillEllipse(
-            rect.Center.X - (rect.Width * 0.23f),
-            rect.Center.Y + (rect.Height * 0.02f),
-            rect.Width * 0.46f,
-            rect.Height * 0.2f);
+            rect.Center.X - (rect.Width * 0.28f),
+            rect.Center.Y + (rect.Height * 0.01f),
+            rect.Width * 0.56f,
+            rect.Height * 0.24f);
 
-        for (int plume = 0; plume < 5; plume++)
+        for (int plume = 0; plume < 7; plume++)
         {
             float time = phase + cellSeed + (plume * 0.82f);
-            float width = rect.Width * (0.28f + (plume * 0.075f));
-            float height = rect.Height * (0.2f + (plume * 0.06f));
-            float driftX = MathF.Sin((time * 0.92f) + plume) * (2.8f + (plume * 0.9f));
-            float rise = (MathF.Cos((time * 0.67f) + plume) * 2.2f) - (plume * 4.3f);
+            float width = rect.Width * (0.34f + (plume * 0.082f));
+            float height = rect.Height * (0.24f + (plume * 0.065f));
+            float driftX = MathF.Sin((time * 0.92f) + plume) * (3.4f + (plume * 1.15f));
+            float rise = (MathF.Cos((time * 0.67f) + plume) * 2.8f) - (plume * 4.9f);
             float x = rect.Center.X - (width * 0.5f) + driftX;
-            float y = rect.Center.Y - (height * 0.32f) + rise;
+            float y = rect.Center.Y - (height * 0.24f) + rise;
 
             canvas.FillColor = plume switch
             {
                 0 => smokeShadow,
-                1 or 2 => smokeDense,
+                1 or 2 or 3 => smokeDense,
                 _ => smokeSoft
             };
             canvas.FillEllipse(x, y, width, height);
 
-            float wispWidth = width * 0.54f;
-            float wispHeight = height * 0.58f;
-            canvas.FillColor = WithAlpha(smokeSoft, 0.08f + (plume * 0.012f));
+            float wispWidth = width * 0.58f;
+            float wispHeight = height * 0.62f;
+            canvas.FillColor = WithAlpha(smokeSoft, 0.15f + (plume * 0.014f));
             canvas.FillEllipse(
-                x + (width * 0.18f),
-                y - (height * 0.2f),
+                x + (width * 0.16f),
+                y - (height * 0.24f),
                 wispWidth,
                 wispHeight);
         }
 
-        for (int wisp = 0; wisp < 2; wisp++)
+        for (int wisp = 0; wisp < 3; wisp++)
         {
             float time = phase + cellSeed + (wisp * 1.35f);
-            float width = rect.Width * (0.22f + (wisp * 0.08f));
-            float height = rect.Height * (0.14f + (wisp * 0.05f));
-            float x = rect.Center.X - (width * 0.5f) + (MathF.Sin((time * 1.3f) + wisp) * 4.4f);
-            float y = rect.Y - (rect.Height * 0.04f) - (wisp * 5.8f) + (MathF.Cos(time * 0.8f) * 1.4f);
+            float width = rect.Width * (0.28f + (wisp * 0.09f));
+            float height = rect.Height * (0.18f + (wisp * 0.06f));
+            float x = rect.Center.X - (width * 0.5f) + (MathF.Sin((time * 1.3f) + wisp) * 5.2f);
+            float y = rect.Y - (rect.Height * 0.08f) - (wisp * 6.6f) + (MathF.Cos(time * 0.8f) * 1.6f);
 
-            canvas.FillColor = WithAlpha(smokeSoft, 0.09f - (wisp * 0.015f));
+            canvas.FillColor = WithAlpha(smokeSoft, 0.16f - (wisp * 0.02f));
             canvas.FillEllipse(x, y, width, height);
         }
 
         canvas.FillColor = ember;
         canvas.FillEllipse(
-            rect.Center.X - (rect.Width * 0.12f),
-            rect.Center.Y + (rect.Height * 0.04f),
-            rect.Width * 0.24f,
-            rect.Height * 0.14f);
+            rect.Center.X - (rect.Width * 0.16f),
+            rect.Center.Y + (rect.Height * 0.03f),
+            rect.Width * 0.32f,
+            rect.Height * 0.17f);
     }
 
     private static void DrawTargetLock(ICanvas canvas, RectF rect, float phase, BoardCellVm cell)
