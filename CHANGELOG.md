@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.27] - 2026-03-05
+
+### Changed
+- Rebuilt enemy targeting to use probability-weighted hunt scoring, stronger hit-cluster resolution, and better remaining-ship awareness instead of relying on mostly random easy-mode queues.
+- Improved both `Easy` and `Hard` AI accuracy while preserving difficulty separation, with hard mode now winning on smarter shot selection rather than extra salvos.
+
+### Fixed
+- Removed the hard-mode bonus-shot path so the enemy now fires exactly once per turn on every difficulty.
+- Preserved enemy targeting knowledge when difficulty is recalibrated midgame by priming the strategy from the current player board state.
+
+### Release
+- `v1.6.27` is marked ready for **public release**.
+
 ## [1.6.26] - 2026-03-05
 
 ### Changed

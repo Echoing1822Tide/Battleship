@@ -329,6 +329,39 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void HardMode_EnemyTurn_FiresAtMostOneShotPerTurn()
+    {
+        var vm = new BoardViewModel(
+            new Random(302),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with { Difficulty = CpuDifficulty.Hard }),
+            new NoOpFeedbackService());
+
+        PlaceShip(vm, "Aircraft Carrier", row: 4, col: 2, vertical: false);
+        PlaceShip(vm, "Battleship", row: 5, col: 2, vertical: false);
+        PlaceShip(vm, "Cruiser", row: 6, col: 2, vertical: false);
+        PlaceShip(vm, "Submarine", row: 7, col: 2, vertical: false);
+        PlaceShip(vm, "Destroyer", row: 8, col: 2, vertical: false);
+
+        int attackedBeforeTurn = 0;
+        bool sawEnemyHit = false;
+
+        for (int turn = 0; turn < 16 && !vm.IsGameOver; turn++)
+        {
+            var target = vm.EnemyCells.First(cell => cell.MarkerState == ShotMarkerState.None);
+            vm.EnemyCellTappedCommand.Execute(target);
+
+            int attackedAfterTurn = vm.PlayerCells.Count(cell => cell.MarkerState != ShotMarkerState.None);
+            Assert.InRange(attackedAfterTurn - attackedBeforeTurn, 0, 1);
+            attackedBeforeTurn = attackedAfterTurn;
+
+            sawEnemyHit |= vm.PlayerCells.Any(cell => cell.MarkerState is ShotMarkerState.Hit or ShotMarkerState.Sunk);
+        }
+
+        Assert.True(sawEnemyHit);
+    }
+
+    [Fact]
     [Trait("Category", "Core9")]
     public void NewGameCommand_ResetsToPlacementPhase()
     {

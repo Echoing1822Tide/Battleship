@@ -19,7 +19,6 @@ public class BoardViewModel : ObservableObject
     private readonly Dictionary<string, Ship> _playerShipsByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ShipSpriteVm> _playerSpritesByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ShipSpriteVm> _enemySpritesByName = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Queue<BoardCoordinate> _easyEnemyShotQueue = new();
     private readonly List<PlayerShotRecord> _currentGameShotHistory = new();
     private BoardCellVm? _placementPreviewAnchorCell;
     private BoardCellVm? _enemyHoverTargetCell;
@@ -1985,47 +1984,18 @@ public class BoardViewModel : ObservableObject
 
     private void InitializeEnemyTargeting()
     {
-        _enemyTargetingStrategy = null;
-        _easyEnemyShotQueue.Clear();
+        _enemyTargetingStrategy = new EnemyTargetingStrategy(
+            Size,
+            _random,
+            SelectedDifficulty,
+            ResolveRemainingPlayerShipLengths());
 
-        if (SelectedDifficulty == CpuDifficulty.Easy)
-        {
-            var coordinates = new List<BoardCoordinate>(Size * Size);
-            for (int row = 0; row < Size; row++)
-            {
-                for (int col = 0; col < Size; col++)
-                    coordinates.Add(new BoardCoordinate(row, col));
-            }
-
-            for (int i = coordinates.Count - 1; i > 0; i--)
-            {
-                int j = _random.Next(i + 1);
-                (coordinates[i], coordinates[j]) = (coordinates[j], coordinates[i]);
-            }
-
-            foreach (var coordinate in coordinates)
-                _easyEnemyShotQueue.Enqueue(coordinate);
-
-            return;
-        }
-
-        _enemyTargetingStrategy = new EnemyTargetingStrategy(Size, _random, SelectedDifficulty);
+        if (_playerBoard is not null)
+            _enemyTargetingStrategy.PrimeFromBoard(_playerBoard);
     }
 
     private bool TryGetNextEnemyTarget(out BoardCoordinate target)
     {
-        if (SelectedDifficulty == CpuDifficulty.Easy)
-        {
-            if (_easyEnemyShotQueue.Count > 0)
-            {
-                target = _easyEnemyShotQueue.Dequeue();
-                return true;
-            }
-
-            target = default;
-            return false;
-        }
-
         if (_enemyTargetingStrategy is null)
         {
             target = default;
@@ -2042,6 +2012,36 @@ public class BoardViewModel : ObservableObject
             target = default;
             return false;
         }
+    }
+
+    private IReadOnlyList<int> ResolveRemainingPlayerShipLengths()
+    {
+        if (_playerBoard is null)
+            return FleetTemplates.Select(template => template.Size).ToArray();
+
+        var remainingLengths = _playerBoard.Fleet
+            .Where(ship => !ship.IsSunk)
+            .Select(ship => ship.Size)
+            .OrderByDescending(length => length)
+            .ToArray();
+
+        return remainingLengths.Length > 0
+            ? remainingLengths
+            : FleetTemplates.Select(template => template.Size).ToArray();
+    }
+
+    private int? ResolvePlayerShipSize(string? shipName)
+    {
+        if (string.IsNullOrWhiteSpace(shipName))
+            return null;
+
+        if (_playerShipsByName.TryGetValue(shipName, out var playerShip))
+            return playerShip.Size;
+
+        var template = FleetTemplates.FirstOrDefault(candidate =>
+            string.Equals(candidate.Name, shipName, StringComparison.OrdinalIgnoreCase));
+
+        return template?.Size;
     }
 
     private void RevealEnemyFleet()
@@ -2280,92 +2280,73 @@ public class BoardViewModel : ObservableObject
         if (_playerBoard is null)
             return;
 
-        int maxShotsThisTurn = SelectedDifficulty == CpuDifficulty.Hard ? 2 : 1;
-        ShotInfo? lastShot = null;
-
-        for (int shotNumber = 0; shotNumber < maxShotsThisTurn; shotNumber++)
+        if (!TryGetNextEnemyTarget(out var target))
         {
-            if (!TryGetNextEnemyTarget(out var target))
-            {
-                IsGameOver = true;
-                TurnMessage = "Draw";
-                StatusMessage = "No remaining shots.";
-                EnemyLastShotMessage = "Enemy last shot: --";
-                RecordGameOutcome(GameOutcome.Draw);
-                EmitFeedback(GameFeedbackCue.Draw);
-                RevealEnemyFleet();
-                ApplyAutoBoardFocus();
-                ShowGameOverOverlay(GameOutcome.Draw);
-                return;
-            }
-
-            int targetIndex = target.Row * Size + target.Col;
-            BoardCellVm? targetCell = targetIndex >= 0 && targetIndex < PlayerCells.Count
-                ? PlayerCells[targetIndex]
-                : null;
-            string targetCoordinate = ToBoardCoordinate(target.Row, target.Col);
-
-            targetCell?.SetTargetLocked(true);
-            try
-            {
-                await PauseForDramaAsync(_random.Next(260, 541), $"Enemy lock acquired at {targetCoordinate}...", showTransitionCard: false);
-                if (sessionId != _gameSessionId || IsGameOver)
-                    return;
-
-                var enemyShot = _playerBoard.Attack(target.Row, target.Col);
-                lastShot = enemyShot;
-
-                if (_enemyTargetingStrategy is not null)
-                    _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result);
-
-                ApplyShotResult(PlayerCells, enemyShot);
-
-                if (enemyShot.Result == AttackResult.Sunk &&
-                    enemyShot.SunkShipName is not null &&
-                    _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
-                {
-                    sprite.MarkSunk();
-                }
-
-                OnPropertyChanged(nameof(ScoreLine));
-                EmitShotFeedback(enemyShot);
-
-                EnemyLastShotMessage = $"Enemy last shot: {targetCoordinate} - {enemyShot.Message}";
-                StatusMessage = BuildEnemyShotCallout(targetCoordinate, enemyShot);
-                await PauseForDramaAsync(enemyShot.IsHit ? 280 : 220, StatusMessage, showTransitionCard: false);
-                if (sessionId != _gameSessionId || IsGameOver)
-                    return;
-
-                if (_playerBoard.AllShipsSunk)
-                {
-                    IsGameOver = true;
-                    TurnMessage = "Defeat";
-                    StatusMessage = "All your ships have been sunk. You lose.";
-                    RecordGameOutcome(GameOutcome.Loss);
-                    EmitFeedback(GameFeedbackCue.Loss);
-                    RevealEnemyFleet();
-                    ApplyAutoBoardFocus();
-                    ShowGameOverOverlay(GameOutcome.Loss);
-                    return;
-                }
-
-                bool grantBonusShot = SelectedDifficulty == CpuDifficulty.Hard && enemyShot.IsHit;
-                if (!grantBonusShot)
-                    break;
-
-                StatusMessage = "Enemy scored a hit and takes an aggressive follow-up shot.";
-                await PauseForDramaAsync(_random.Next(240, 581), "Enemy loading aggressive follow-up salvo...", showTransitionCard: false);
-                if (sessionId != _gameSessionId || IsGameOver)
-                    return;
-            }
-            finally
-            {
-                targetCell?.SetTargetLocked(false);
-            }
+            IsGameOver = true;
+            TurnMessage = "Draw";
+            StatusMessage = "No remaining shots.";
+            EnemyLastShotMessage = "Enemy last shot: --";
+            RecordGameOutcome(GameOutcome.Draw);
+            EmitFeedback(GameFeedbackCue.Draw);
+            RevealEnemyFleet();
+            ApplyAutoBoardFocus();
+            ShowGameOverOverlay(GameOutcome.Draw);
+            return;
         }
 
-        if (lastShot is null)
-            return;
+        int targetIndex = target.Row * Size + target.Col;
+        BoardCellVm? targetCell = targetIndex >= 0 && targetIndex < PlayerCells.Count
+            ? PlayerCells[targetIndex]
+            : null;
+        string targetCoordinate = ToBoardCoordinate(target.Row, target.Col);
+
+        targetCell?.SetTargetLocked(true);
+        try
+        {
+            await PauseForDramaAsync(_random.Next(260, 541), $"Enemy lock acquired at {targetCoordinate}...", showTransitionCard: false);
+            if (sessionId != _gameSessionId || IsGameOver)
+                return;
+
+            var enemyShot = _playerBoard.Attack(target.Row, target.Col);
+
+            if (_enemyTargetingStrategy is not null)
+                _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result, ResolvePlayerShipSize(enemyShot.SunkShipName));
+
+            ApplyShotResult(PlayerCells, enemyShot);
+
+            if (enemyShot.Result == AttackResult.Sunk &&
+                enemyShot.SunkShipName is not null &&
+                _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
+            {
+                sprite.MarkSunk();
+            }
+
+            OnPropertyChanged(nameof(ScoreLine));
+            EmitShotFeedback(enemyShot);
+
+            EnemyLastShotMessage = $"Enemy last shot: {targetCoordinate} - {enemyShot.Message}";
+            StatusMessage = BuildEnemyShotCallout(targetCoordinate, enemyShot);
+            await PauseForDramaAsync(enemyShot.IsHit ? 280 : 220, StatusMessage, showTransitionCard: false);
+            if (sessionId != _gameSessionId || IsGameOver)
+                return;
+
+            if (_playerBoard.AllShipsSunk)
+            {
+                IsGameOver = true;
+                TurnMessage = "Defeat";
+                StatusMessage = "All your ships have been sunk. You lose.";
+                RecordGameOutcome(GameOutcome.Loss);
+                EmitFeedback(GameFeedbackCue.Loss);
+                RevealEnemyFleet();
+                ApplyAutoBoardFocus();
+                ShowGameOverOverlay(GameOutcome.Loss);
+                return;
+            }
+        }
+        finally
+        {
+            targetCell?.SetTargetLocked(false);
+        }
 
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
@@ -2378,71 +2359,53 @@ public class BoardViewModel : ObservableObject
         if (_playerBoard is null)
             return;
 
-        int maxShotsThisTurn = SelectedDifficulty == CpuDifficulty.Hard ? 2 : 1;
-        ShotInfo? lastShot = null;
-
-        for (int shotNumber = 0; shotNumber < maxShotsThisTurn; shotNumber++)
+        if (!TryGetNextEnemyTarget(out var target))
         {
-            if (!TryGetNextEnemyTarget(out var target))
-            {
-                IsGameOver = true;
-                TurnMessage = "Draw";
-                StatusMessage = "No remaining shots.";
-                EnemyLastShotMessage = "Enemy last shot: --";
-                RecordGameOutcome(GameOutcome.Draw);
-                EmitFeedback(GameFeedbackCue.Draw);
-                RevealEnemyFleet();
-                ApplyAutoBoardFocus();
-                ShowGameOverOverlay(GameOutcome.Draw);
-                return;
-            }
-
-            var enemyShot = _playerBoard.Attack(target.Row, target.Col);
-            lastShot = enemyShot;
-
-            if (_enemyTargetingStrategy is not null)
-                _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result);
-
-            ApplyShotResult(PlayerCells, enemyShot);
-
-            if (enemyShot.Result == AttackResult.Sunk &&
-                enemyShot.SunkShipName is not null &&
-                _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
-            {
-                sprite.MarkSunk();
-            }
-
-            OnPropertyChanged(nameof(ScoreLine));
-
-            EmitShotFeedback(enemyShot);
-
-            if (_playerBoard.AllShipsSunk)
-            {
-                IsGameOver = true;
-                TurnMessage = "Defeat";
-                EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
-                StatusMessage = "All your ships have been sunk. You lose.";
-                RecordGameOutcome(GameOutcome.Loss);
-                EmitFeedback(GameFeedbackCue.Loss);
-                RevealEnemyFleet();
-                ApplyAutoBoardFocus();
-                ShowGameOverOverlay(GameOutcome.Loss);
-                return;
-            }
-
-            bool grantBonusShot = SelectedDifficulty == CpuDifficulty.Hard && enemyShot.IsHit;
-            if (!grantBonusShot)
-                break;
-
-            StatusMessage = "Enemy scored a hit and takes an aggressive follow-up shot.";
+            IsGameOver = true;
+            TurnMessage = "Draw";
+            StatusMessage = "No remaining shots.";
+            EnemyLastShotMessage = "Enemy last shot: --";
+            RecordGameOutcome(GameOutcome.Draw);
+            EmitFeedback(GameFeedbackCue.Draw);
+            RevealEnemyFleet();
+            ApplyAutoBoardFocus();
+            return;
         }
 
-        if (lastShot is null)
+        var enemyShot = _playerBoard.Attack(target.Row, target.Col);
+
+        if (_enemyTargetingStrategy is not null)
+            _enemyTargetingStrategy.RegisterShotOutcome(target, enemyShot.Result, ResolvePlayerShipSize(enemyShot.SunkShipName));
+
+        ApplyShotResult(PlayerCells, enemyShot);
+
+        if (enemyShot.Result == AttackResult.Sunk &&
+            enemyShot.SunkShipName is not null &&
+            _playerSpritesByName.TryGetValue(enemyShot.SunkShipName, out var sprite))
+        {
+            sprite.MarkSunk();
+        }
+
+        OnPropertyChanged(nameof(ScoreLine));
+        EmitShotFeedback(enemyShot);
+
+        if (_playerBoard.AllShipsSunk)
+        {
+            IsGameOver = true;
+            TurnMessage = "Defeat";
+            EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
+            StatusMessage = "All your ships have been sunk. You lose.";
+            RecordGameOutcome(GameOutcome.Loss);
+            EmitFeedback(GameFeedbackCue.Loss);
+            RevealEnemyFleet();
+            ApplyAutoBoardFocus();
+            ShowGameOverOverlay(GameOutcome.Loss);
             return;
+        }
 
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
-        EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(lastShot.Row, lastShot.Col)} - {lastShot.Message}";
+        EnemyLastShotMessage = $"Enemy last shot: {ToBoardCoordinate(enemyShot.Row, enemyShot.Col)} - {enemyShot.Message}";
         StatusMessage = "Tap a cell on Enemy Waters to fire.";
         ApplyAutoBoardFocus();
     }
