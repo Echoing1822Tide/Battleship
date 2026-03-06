@@ -162,6 +162,8 @@ public abstract class BoardRenderViewBase : GraphicsView
 
 public sealed class OceanBoardSurfaceView : BoardRenderViewBase
 {
+    private const float BoardPerspectiveTilt = 0.09f;
+
     public static readonly BindableProperty IsPlayerBoardProperty = BindableProperty.Create(
         nameof(IsPlayerBoard),
         typeof(bool),
@@ -194,8 +196,10 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
         float phase = (float)AnimationPhase;
 
         DrawOceanBackdrop(canvas, boardWidth, boardHeight, phase);
+        DrawSubsurfaceContours(canvas, boardWidth, boardHeight, phase);
         DrawWaveBands(canvas, boardWidth, boardHeight, phase);
         DrawCells(canvas, cellSize, phase);
+        DrawSpecularSweep(canvas, boardWidth, boardHeight, phase);
         DrawGridBloom(canvas, boardWidth, boardHeight);
     }
 
@@ -204,9 +208,13 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
         var deepWater = ResolveColor("GameColorSurface", IsPlayerBoard ? "#0b3352" : "#082d49");
         var midWater = ResolveColor("GameColorPanel", IsPlayerBoard ? "#12496f" : "#0f4165");
         var crest = ResolveColor("GameColorAccentSoft", "#3d8fc2");
+        var abyss = Darken(deepWater, 0.26f);
 
         canvas.FillColor = deepWater;
         canvas.FillRectangle(0, 0, boardWidth, boardHeight);
+
+        canvas.FillColor = WithAlpha(abyss, 0.32f);
+        canvas.FillEllipse(-boardWidth * 0.12f, boardHeight * 0.54f, boardWidth * 1.24f, boardHeight * 0.66f);
 
         for (int layer = 0; layer < 6; layer++)
         {
@@ -221,12 +229,34 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
 
         canvas.FillColor = WithAlpha(crest, 0.08f);
         canvas.FillEllipse(boardWidth * 0.18f, boardHeight * 0.08f, boardWidth * 0.64f, boardHeight * 0.32f);
+
+        canvas.FillColor = WithAlpha(Lighten(crest, 0.22f), 0.06f);
+        canvas.FillEllipse(boardWidth * 0.08f, -boardHeight * 0.04f, boardWidth * 0.9f, boardHeight * 0.28f);
+    }
+
+    private void DrawSubsurfaceContours(ICanvas canvas, float boardWidth, float boardHeight, float phase)
+    {
+        var trough = ResolveColor("GameColorPanel", IsPlayerBoard ? "#153b62" : "#12324f");
+        var trench = WithAlpha(Darken(trough, 0.4f), 0.12f);
+        var shelf = WithAlpha(Lighten(trough, 0.18f), 0.08f);
+
+        for (int ridge = 0; ridge < 5; ridge++)
+        {
+            float y = (boardHeight * (0.18f + (ridge * 0.17f))) + (MathF.Sin((phase * 0.42f) + ridge) * 9f);
+            float width = boardWidth * (0.74f + (ridge * 0.08f));
+            float height = boardHeight * (0.1f + (ridge * 0.03f));
+            float x = ((boardWidth - width) * 0.5f) + (MathF.Cos((phase * 0.31f) + ridge) * 12f);
+
+            canvas.FillColor = ridge % 2 == 0 ? trench : shelf;
+            canvas.FillEllipse(x, y, width, height);
+        }
     }
 
     private void DrawWaveBands(ICanvas canvas, float boardWidth, float boardHeight, float phase)
     {
         var crest = ResolveColor("GameColorAccent", "#7dd7ff");
         var foam = ResolveColor("GameColorTextPrimary", "#dff6ff");
+        var trough = Darken(ResolveColor("GameColorSurfaceAlt", "#164468"), 0.14f);
 
         for (int band = 0; band < 11; band++)
         {
@@ -234,18 +264,30 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
             float amplitude = 4f + ((band % 3) * 2.1f);
             float stroke = 2.2f + ((band + 1) % 2);
             var path = new PathF();
+            var shadowPath = new PathF();
 
             for (float x = -28; x <= boardWidth + 28; x += 18)
             {
                 float y = baseY
                     + (MathF.Sin((x * 0.028f) + (phase * 1.4f) + (band * 0.78f)) * amplitude)
                     + (MathF.Cos((x * 0.014f) - (phase * 0.62f) + band) * (amplitude * 0.45f));
+                float shadowY = y + 5.5f + ((band % 2) * 0.8f);
 
                 if (x <= -28)
+                {
                     path.MoveTo(x, y);
+                    shadowPath.MoveTo(x, shadowY);
+                }
                 else
+                {
                     path.LineTo(x, y);
+                    shadowPath.LineTo(x, shadowY);
+                }
             }
+
+            canvas.StrokeColor = WithAlpha(trough, 0.16f + ((band % 2) * 0.02f));
+            canvas.StrokeSize = stroke + 5.2f;
+            canvas.DrawPath(shadowPath);
 
             canvas.StrokeColor = WithAlpha(crest, 0.06f + ((band % 3) * 0.015f));
             canvas.StrokeSize = stroke + 3.2f;
@@ -278,12 +320,20 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
             var plate = new RectF(x + inset, y + inset, width, height);
 
             Color baseColor = WithAlpha(cell.CellFillColor, ResolveCellFillOpacity(cell));
-            Color glossColor = WithAlpha(Lighten(cell.CellFillColor, 0.32f), 0.18f);
-            Color shadowColor = WithAlpha(Darken(cell.CellFillColor, 0.46f), 0.28f);
+            Color glossColor = WithAlpha(Lighten(cell.CellFillColor, 0.38f), 0.22f);
+            Color shadowColor = WithAlpha(Darken(cell.CellFillColor, 0.5f), 0.32f);
+            Color deepShadow = WithAlpha(Darken(cell.CellFillColor, 0.68f), 0.22f);
+            Color ridgeHighlight = WithAlpha(Lighten(cell.CellFillColor, 0.62f), 0.2f);
             float shimmer = (MathF.Sin((phase * 1.25f) + (cell.Row * 0.7f) + (cell.Col * 0.58f)) + 1f) * 0.5f;
+
+            canvas.FillColor = deepShadow;
+            canvas.FillRoundedRectangle(plate.X + 2.2f, plate.Y + 2.6f, plate.Width, plate.Height, corner + 1.2f);
 
             canvas.FillColor = baseColor;
             canvas.FillRoundedRectangle(plate.X, plate.Y, plate.Width, plate.Height, corner);
+
+            canvas.FillColor = WithAlpha(ridgeHighlight, 0.08f + (shimmer * 0.05f));
+            canvas.FillRoundedRectangle(plate.X + 1f, plate.Y + 1f, plate.Width - 2f, plate.Height - 2f, corner - 0.8f);
 
             canvas.FillColor = WithAlpha(glossColor, 0.08f + (shimmer * 0.08f));
             canvas.FillRoundedRectangle(plate.X + 1.2f, plate.Y + 1.2f, plate.Width - 2.4f, plate.Height * 0.38f, 5.4f);
@@ -291,6 +341,7 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
             canvas.FillColor = shadowColor;
             canvas.FillRoundedRectangle(plate.X + 2f, plate.Bottom - (plate.Height * 0.22f), plate.Width - 4f, plate.Height * 0.16f, 4.4f);
 
+            DrawCellBevel(canvas, plate, phase, cell);
             DrawMicroRipples(canvas, plate, phase, cell);
         }
     }
@@ -334,12 +385,52 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
         }
     }
 
+    private static void DrawCellBevel(ICanvas canvas, RectF plate, float phase, BoardCellVm cell)
+    {
+        float shimmer = (MathF.Sin((phase * 1.05f) + (cell.Row * 0.33f) + (cell.Col * 0.81f)) + 1f) * 0.5f;
+        Color topEdge = WithAlpha(Lighten(cell.CellStrokeColor, 0.42f), 0.18f + (shimmer * 0.05f));
+        Color bottomEdge = WithAlpha(Darken(cell.CellStrokeColor, 0.38f), 0.24f);
+        float lip = MathF.Max(2.2f, plate.Width * 0.08f);
+
+        canvas.FillColor = topEdge;
+        canvas.FillRoundedRectangle(plate.X + 1.4f, plate.Y + 1.4f, plate.Width - 2.8f, lip, 3.2f);
+
+        canvas.FillColor = topEdge;
+        canvas.FillRoundedRectangle(plate.X + 1.2f, plate.Y + 1.2f, lip, plate.Height - 2.4f, 3.2f);
+
+        canvas.FillColor = bottomEdge;
+        canvas.FillRoundedRectangle(plate.X + 1.6f, plate.Bottom - lip - 1.4f, plate.Width - 3.2f, lip, 3.2f);
+
+        canvas.FillColor = bottomEdge;
+        canvas.FillRoundedRectangle(plate.Right - lip - 1.4f, plate.Y + 1.6f, lip, plate.Height - 3.2f, 3.2f);
+    }
+
+    private void DrawSpecularSweep(ICanvas canvas, float boardWidth, float boardHeight, float phase)
+    {
+        var foam = ResolveColor("GameColorTextPrimary", "#e5fbff");
+        float sweepWidth = boardWidth * 0.28f;
+        float sweepX = ((phase * 44f) % (boardWidth + (sweepWidth * 2))) - sweepWidth;
+        var path = new PathF();
+        path.MoveTo(sweepX, 0);
+        path.LineTo(sweepX + sweepWidth, 0);
+        path.LineTo(sweepX + (sweepWidth * (1 + BoardPerspectiveTilt)), boardHeight);
+        path.LineTo(sweepX - (sweepWidth * BoardPerspectiveTilt), boardHeight);
+        path.Close();
+
+        canvas.FillColor = WithAlpha(foam, AnimationRuntimeSettings.ReduceMotion ? 0.03f : 0.05f);
+        canvas.FillPath(path);
+    }
+
     private void DrawGridBloom(ICanvas canvas, float boardWidth, float boardHeight)
     {
         var edgeGlow = ResolveColor("GameColorAccentSoft", "#4faee0");
         canvas.StrokeColor = WithAlpha(edgeGlow, 0.12f);
         canvas.StrokeSize = 2f;
         canvas.DrawRoundedRectangle(2, 2, boardWidth - 4, boardHeight - 4, 8);
+
+        canvas.StrokeColor = WithAlpha(Lighten(edgeGlow, 0.35f), 0.08f);
+        canvas.StrokeSize = 1.1f;
+        canvas.DrawRoundedRectangle(7, 7, boardWidth - 14, boardHeight - 14, 6);
     }
 
     private sealed class OceanBoardSurfaceDrawable(OceanBoardSurfaceView owner) : IDrawable
@@ -390,6 +481,8 @@ public sealed class OceanBoardSurfaceView : BoardRenderViewBase
 
 public sealed class BoardEffectsView : BoardRenderViewBase
 {
+    private const string SourceExplosionPath = @"C:\MSSA Code-github\BattleshipMaui\Resources\Images\explosion.png";
+
     private readonly BoardEffectsDrawable _drawable;
     private Microsoft.Maui.Graphics.IImage? _explosionImage;
     private bool _isExplosionImageLoading;
@@ -415,6 +508,9 @@ public sealed class BoardEffectsView : BoardRenderViewBase
             float y = cell.Row * cellSize;
             var rect = new RectF(x, y, cellSize, cellSize);
 
+            if (cell.IsSunkSmokeVisible)
+                DrawSunkSmoke(canvas, rect, phase, cell);
+
             if (cell.IsTargetLockVisible)
                 DrawTargetLock(canvas, rect, cell);
 
@@ -424,6 +520,70 @@ public sealed class BoardEffectsView : BoardRenderViewBase
             if (cell.IsHitMarkerVisible)
                 DrawHitBlast(canvas, rect, phase, cell);
         }
+    }
+
+    private static void DrawSunkSmoke(ICanvas canvas, RectF rect, float phase, BoardCellVm cell)
+    {
+        float cellSeed = (cell.Row * 0.73f) + (cell.Col * 0.41f);
+        Color smokeShadow = WithAlpha(Color.FromArgb("#313741"), 0.16f);
+        Color smokeDense = WithAlpha(Color.FromArgb("#69717d"), 0.18f);
+        Color smokeSoft = WithAlpha(Color.FromArgb("#d9e0e8"), 0.14f);
+        Color ember = WithAlpha(Color.FromArgb("#ff9f4a"), 0.11f);
+        Color heatGlow = WithAlpha(Color.FromArgb("#ffcf7b"), 0.06f);
+
+        canvas.FillColor = heatGlow;
+        canvas.FillEllipse(
+            rect.Center.X - (rect.Width * 0.23f),
+            rect.Center.Y + (rect.Height * 0.02f),
+            rect.Width * 0.46f,
+            rect.Height * 0.2f);
+
+        for (int plume = 0; plume < 5; plume++)
+        {
+            float time = phase + cellSeed + (plume * 0.82f);
+            float width = rect.Width * (0.28f + (plume * 0.075f));
+            float height = rect.Height * (0.2f + (plume * 0.06f));
+            float driftX = MathF.Sin((time * 0.92f) + plume) * (2.8f + (plume * 0.9f));
+            float rise = (MathF.Cos((time * 0.67f) + plume) * 2.2f) - (plume * 4.3f);
+            float x = rect.Center.X - (width * 0.5f) + driftX;
+            float y = rect.Center.Y - (height * 0.32f) + rise;
+
+            canvas.FillColor = plume switch
+            {
+                0 => smokeShadow,
+                1 or 2 => smokeDense,
+                _ => smokeSoft
+            };
+            canvas.FillEllipse(x, y, width, height);
+
+            float wispWidth = width * 0.54f;
+            float wispHeight = height * 0.58f;
+            canvas.FillColor = WithAlpha(smokeSoft, 0.08f + (plume * 0.012f));
+            canvas.FillEllipse(
+                x + (width * 0.18f),
+                y - (height * 0.2f),
+                wispWidth,
+                wispHeight);
+        }
+
+        for (int wisp = 0; wisp < 2; wisp++)
+        {
+            float time = phase + cellSeed + (wisp * 1.35f);
+            float width = rect.Width * (0.22f + (wisp * 0.08f));
+            float height = rect.Height * (0.14f + (wisp * 0.05f));
+            float x = rect.Center.X - (width * 0.5f) + (MathF.Sin((time * 1.3f) + wisp) * 4.4f);
+            float y = rect.Y - (rect.Height * 0.04f) - (wisp * 5.8f) + (MathF.Cos(time * 0.8f) * 1.4f);
+
+            canvas.FillColor = WithAlpha(smokeSoft, 0.09f - (wisp * 0.015f));
+            canvas.FillEllipse(x, y, width, height);
+        }
+
+        canvas.FillColor = ember;
+        canvas.FillEllipse(
+            rect.Center.X - (rect.Width * 0.12f),
+            rect.Center.Y + (rect.Height * 0.04f),
+            rect.Width * 0.24f,
+            rect.Height * 0.14f);
     }
 
     private static void DrawTargetLock(ICanvas canvas, RectF rect, BoardCellVm cell)
@@ -519,7 +679,15 @@ public sealed class BoardEffectsView : BoardRenderViewBase
         if (_explosionImage is not null)
         {
             float imageInset = rect.Width * 0.08f;
-            canvas.DrawImage(_explosionImage, rect.X + imageInset, rect.Y + imageInset, rect.Width - (imageInset * 2), rect.Height - (imageInset * 2));
+            canvas.SaveState();
+            canvas.Rotate((float)cell.HitMarkerRotation, rect.Center.X, rect.Center.Y);
+            canvas.DrawImage(
+                _explosionImage,
+                rect.X + imageInset,
+                rect.Y + imageInset,
+                rect.Width - (imageInset * 2),
+                rect.Height - (imageInset * 2));
+            canvas.RestoreState();
             return;
         }
 
@@ -559,9 +727,12 @@ public sealed class BoardEffectsView : BoardRenderViewBase
         try
         {
 #if WINDOWS
-            await using var stream = await TryOpenAssetAsync("explosion.png").ConfigureAwait(false);
+            await using var stream = await ResolveExplosionImageStreamAsync().ConfigureAwait(false);
             if (stream is null)
+            {
+                CrashLog.Write("BoardEffectsView.LoadExplosionImage", null, "explosion.png stream was null");
                 return;
+            }
 
             using var memory = new MemoryStream();
             await stream.CopyToAsync(memory).ConfigureAwait(false);
@@ -569,6 +740,7 @@ public sealed class BoardEffectsView : BoardRenderViewBase
 
             var imageLoader = new PlatformImageLoadingService();
             _explosionImage = imageLoader.FromStream(memory, ImageFormat.Png);
+            CrashLog.Write("BoardEffectsView.LoadExplosionImage", null, $"Loaded=True Bytes={memory.Length}");
 #endif
         }
         catch (Exception ex)
@@ -582,22 +754,46 @@ public sealed class BoardEffectsView : BoardRenderViewBase
         }
     }
 
-    private static async Task<Stream?> TryOpenAssetAsync(string fileName)
+    private static async Task<Stream?> ResolveExplosionImageStreamAsync()
     {
-        try
+        string[] diskCandidates =
         {
-            return await FileSystem.Current.OpenAppPackageFileAsync(fileName).ConfigureAwait(false);
+            Path.Combine(AppContext.BaseDirectory, "explosion.png"),
+            Path.Combine(AppContext.BaseDirectory, "Resources", "Images", "explosion.png"),
+            SourceExplosionPath
+        };
+
+        foreach (var candidate in diskCandidates)
+        {
+            if (File.Exists(candidate))
+                return File.OpenRead(candidate);
         }
-        catch
+
+        string[] packageCandidates =
+        {
+            "explosion.png",
+            "Resources/Images/explosion.png"
+        };
+
+        foreach (var candidate in packageCandidates)
         {
             try
             {
-                return await FileSystem.Current.OpenAppPackageFileAsync($"Resources/Images/{fileName}").ConfigureAwait(false);
+                return await FileSystem.Current.OpenAppPackageFileAsync(candidate).ConfigureAwait(false);
             }
             catch
             {
-                return null;
+                // Try the next path.
             }
+        }
+
+        try
+        {
+            return File.OpenRead(SourceExplosionPath);
+        }
+        catch
+        {
+            return null;
         }
     }
 

@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.22] - 2026-03-05
+
+### Changed
+- Deepened the board ocean renderer with stronger subsurface contouring, crest-shadow passes, specular light sweeps, and heavier bevel shading so each grid reads with more 3D depth.
+- Added continuous drifting smoke to every sunk board cell so destroyed ships keep smoking across all occupied blocks instead of only at the sprite layer.
+
+### Fixed
+- Switched hit blasts to the real `Resources/Images/explosion.png` artwork through the board overlay renderer.
+- Kept the richer board VFX path on top of the stable WinUI startup-safe rendering pipeline.
+
+### Release
+- `v1.6.22` is marked ready for **public release**.
+
 ## [1.6.21] - 2026-03-05
 
 ### Changed

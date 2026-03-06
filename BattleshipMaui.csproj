@@ -19,12 +19,12 @@
 		<Nullable>enable</Nullable>
 
 		<!-- Public release versioning -->
-		<Version>1.6.21</Version>
-		<AssemblyVersion>1.6.21.0</AssemblyVersion>
-		<FileVersion>1.6.21.0</FileVersion>
-		<InformationalVersion>1.6.21</InformationalVersion>
-		<ApplicationDisplayVersion>1.6.21</ApplicationDisplayVersion>
-		<ApplicationVersion>1621</ApplicationVersion>
+		<Version>1.6.22</Version>
+		<AssemblyVersion>1.6.22.0</AssemblyVersion>
+		<FileVersion>1.6.22.0</FileVersion>
+		<InformationalVersion>1.6.22</InformationalVersion>
+		<ApplicationDisplayVersion>1.6.22</ApplicationDisplayVersion>
+		<ApplicationVersion>1622</ApplicationVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -41,6 +41,11 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Link>%(Filename)%(Extension)</Link>
+		</Content>
+		<Content Include="Resources\Images\explosion.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			<Link>explosion.png</Link>
 		</Content>
 	</ItemGroup>
 
