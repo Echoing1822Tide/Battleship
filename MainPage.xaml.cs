@@ -1,7 +1,13 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading;
 using BattleshipMaui.ViewModels;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Graphics;
+#if WINDOWS
+using Windows.Media.Core;
+using Windows.Media.Playback;
+#endif
 
 namespace BattleshipMaui;
 
@@ -9,6 +15,12 @@ public partial class MainPage : ContentPage
 {
     private BoardViewModel? _viewModel;
     private BoardViewMode _currentBoardMode = BoardViewMode.Enemy;
+    private bool _startupSequenceStarted;
+    private bool _startupSequenceCompleted;
+    private CancellationTokenSource? _startupSequenceCts;
+#if WINDOWS
+    private MediaPlayer? _startupAudioPlayer;
+#endif
 
     public MainPage()
     {
@@ -54,6 +66,24 @@ public partial class MainPage : ContentPage
 
         if (_viewModel?.IsSettingsOpen == true)
             _ = AnimateSettingsPopupAsync();
+
+        if (!_startupSequenceStarted)
+        {
+            _startupSequenceStarted = true;
+            _startupSequenceCts = new CancellationTokenSource();
+            _ = RunStartupSequenceAsync(_startupSequenceCts.Token);
+        }
+    }
+
+    public void HandleEscapeKey()
+    {
+        if (!_startupSequenceCompleted)
+        {
+            SkipStartupSequence(skipToGameplay: true);
+            return;
+        }
+
+        _viewModel?.HandleEscapeKey();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -135,6 +165,201 @@ public partial class MainPage : ContentPage
     {
         double scaled = baseDuration * speed;
         return (uint)Math.Clamp((int)scaled, 30, 2000);
+    }
+
+    private async Task RunStartupSequenceAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            StartupSequenceScrim.IsVisible = true;
+            StartupSequenceScrim.Opacity = 1;
+            StartupSkipChip.Opacity = 0.78;
+            StartupCreatorPrefixLabel.Text = string.Empty;
+            StartupCreatorNameLabel.Text = string.Empty;
+            StartupVsCodeLabel.Text = string.Empty;
+            StartupTitleTopLabel.Opacity = 0;
+            StartupTitleMainLabel.Opacity = 0;
+            StartupTitleTopLabel.Scale = 0.9;
+            StartupTitleMainLabel.Scale = 0.88;
+
+            await RunCreatorStartupSceneAsync(cancellationToken);
+            await RunVsCodeStartupSceneAsync(cancellationToken);
+            await RunTitleStartupSceneAsync(cancellationToken);
+            await CompleteStartupSequenceAsync(skipToGameplay: false);
+        }
+        catch (OperationCanceledException)
+        {
+            await CompleteStartupSequenceAsync(skipToGameplay: true);
+        }
+        catch
+        {
+            await CompleteStartupSequenceAsync(skipToGameplay: true);
+        }
+    }
+
+    private void SkipStartupSequence(bool skipToGameplay)
+    {
+        if (_startupSequenceCompleted)
+            return;
+
+        _startupSequenceCts?.Cancel();
+        _ = CompleteStartupSequenceAsync(skipToGameplay);
+    }
+
+    private async Task CompleteStartupSequenceAsync(bool skipToGameplay)
+    {
+        if (_startupSequenceCompleted)
+            return;
+
+        _startupSequenceCompleted = true;
+        _startupSequenceCts?.Dispose();
+        _startupSequenceCts = null;
+        StopStartupAudio();
+
+        if (!skipToGameplay && StartupSequenceScrim.IsVisible)
+            await StartupSequenceScrim.FadeToAsync(0, 420, Easing.CubicIn);
+
+        StartupCreatorScene.IsVisible = false;
+        StartupVsCodeScene.IsVisible = false;
+        StartupTitleScene.IsVisible = false;
+        StartupSequenceScrim.IsVisible = false;
+        StartupSequenceScrim.Opacity = 0;
+
+        if (skipToGameplay)
+            _viewModel?.HandleEscapeKey();
+
+        await Task.CompletedTask;
+    }
+
+    private async Task RunCreatorStartupSceneAsync(CancellationToken cancellationToken)
+    {
+        await PrepareStartupSceneAsync(StartupCreatorScene, cancellationToken);
+        PlayStartupAudio(AppAudio.StartupCreator);
+
+        var stopwatch = Stopwatch.StartNew();
+        await StartupCreatorScene.FadeToAsync(1, 850, Easing.CubicOut);
+        await TypeLabelAsync(StartupCreatorPrefixLabel, "Created By", 1400, cancellationToken);
+        await DelayAsync(300, cancellationToken);
+        await TypeLabelAsync(StartupCreatorNameLabel, "Echoing1822Tide", 2600, cancellationToken);
+        await WaitForRemainingSceneTimeAsync(stopwatch, 7000, cancellationToken);
+        await StartupCreatorScene.FadeToAsync(0, 850, Easing.CubicIn);
+        StartupCreatorScene.IsVisible = false;
+    }
+
+    private async Task RunVsCodeStartupSceneAsync(CancellationToken cancellationToken)
+    {
+        await PrepareStartupSceneAsync(StartupVsCodeScene, cancellationToken);
+        PlayStartupAudio(AppAudio.StartupVsCode);
+
+        var stopwatch = Stopwatch.StartNew();
+        await StartupVsCodeScene.FadeToAsync(1, 850, Easing.CubicOut);
+        await TypeLabelAsync(StartupVsCodeLabel, "Developed with VS Code", 2600, cancellationToken);
+        await WaitForRemainingSceneTimeAsync(stopwatch, 8000, cancellationToken);
+        await StartupVsCodeScene.FadeToAsync(0, 850, Easing.CubicIn);
+        StartupVsCodeScene.IsVisible = false;
+    }
+
+    private async Task RunTitleStartupSceneAsync(CancellationToken cancellationToken)
+    {
+        await PrepareStartupSceneAsync(StartupTitleScene, cancellationToken);
+        PlayStartupAudio(AppAudio.StartupTitle);
+
+        var stopwatch = Stopwatch.StartNew();
+        await StartupTitleScene.FadeToAsync(1, 500, Easing.CubicOut);
+        await Task.WhenAll(
+            StartupTitleTopLabel.FadeToAsync(1, 1800, Easing.CubicOut),
+            StartupTitleTopLabel.ScaleToAsync(1, 1800, Easing.CubicOut),
+            StartupTitleMainLabel.FadeToAsync(1, 2600, Easing.CubicOut),
+            StartupTitleMainLabel.ScaleToAsync(1, 2600, Easing.CubicOut));
+        await WaitForRemainingSceneTimeAsync(stopwatch, 7000, cancellationToken);
+        await StartupTitleScene.FadeToAsync(0, 900, Easing.CubicIn);
+        StartupTitleScene.IsVisible = false;
+    }
+
+    private async Task PrepareStartupSceneAsync(VisualElement scene, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        StartupCreatorScene.IsVisible = ReferenceEquals(scene, StartupCreatorScene);
+        StartupVsCodeScene.IsVisible = ReferenceEquals(scene, StartupVsCodeScene);
+        StartupTitleScene.IsVisible = ReferenceEquals(scene, StartupTitleScene);
+        StartupCreatorScene.Opacity = ReferenceEquals(scene, StartupCreatorScene) ? 0 : 0;
+        StartupVsCodeScene.Opacity = ReferenceEquals(scene, StartupVsCodeScene) ? 0 : 0;
+        StartupTitleScene.Opacity = ReferenceEquals(scene, StartupTitleScene) ? 0 : 0;
+        scene.Opacity = 0;
+        await Task.Yield();
+    }
+
+    private static async Task TypeLabelAsync(Label label, string text, int durationMs, CancellationToken cancellationToken)
+    {
+        label.Text = string.Empty;
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        int stepDelay = Math.Max(24, durationMs / Math.Max(1, text.Length));
+        for (int index = 1; index <= text.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            label.Text = text[..index];
+            await Task.Delay(stepDelay, cancellationToken);
+        }
+    }
+
+    private static async Task WaitForRemainingSceneTimeAsync(Stopwatch stopwatch, int totalMilliseconds, CancellationToken cancellationToken)
+    {
+        int remaining = totalMilliseconds - (int)stopwatch.ElapsedMilliseconds;
+        if (remaining > 0)
+            await Task.Delay(remaining, cancellationToken);
+    }
+
+    private static Task DelayAsync(int milliseconds, CancellationToken cancellationToken)
+    {
+        return milliseconds <= 0
+            ? Task.CompletedTask
+            : Task.Delay(milliseconds, cancellationToken);
+    }
+
+    private void PlayStartupAudio(string fileName)
+    {
+#if WINDOWS
+        try
+        {
+            string? path = AppAudio.ResolvePath(fileName);
+            if (string.IsNullOrWhiteSpace(path))
+                return;
+
+            _startupAudioPlayer ??= new MediaPlayer
+            {
+                IsLoopingEnabled = false,
+                AutoPlay = false,
+                AudioCategory = MediaPlayerAudioCategory.GameMedia,
+                Volume = 1
+            };
+
+            _startupAudioPlayer.Pause();
+            _startupAudioPlayer.Source = MediaSource.CreateFromUri(new Uri(path));
+            _startupAudioPlayer.Play();
+        }
+        catch
+        {
+        }
+#else
+        _ = fileName;
+#endif
+    }
+
+    private void StopStartupAudio()
+    {
+#if WINDOWS
+        try
+        {
+            _startupAudioPlayer?.Pause();
+            if (_startupAudioPlayer?.PlaybackSession is not null)
+                _startupAudioPlayer.PlaybackSession.Position = TimeSpan.Zero;
+        }
+        catch
+        {
+        }
+#endif
     }
 
     private void OnPlayerCellPointerEntered(object? sender, PointerEventArgs e)
@@ -324,5 +549,13 @@ public partial class MainPage : ContentPage
             host.RowDefinitions.Add(new RowDefinition { Height = cellSize });
             host.ColumnDefinitions.Add(new ColumnDefinition { Width = cellSize });
         }
+    }
+
+    private void OnToggleFullScreenClicked(object? sender, EventArgs e)
+    {
+#if WINDOWS
+        BattleshipMaui.WinUI.FullScreenHotkeyController.ToggleCurrentWindow();
+#endif
+        _viewModel?.CloseCommandMenu();
     }
 }

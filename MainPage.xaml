@@ -66,11 +66,6 @@
                             Style="{StaticResource GameSecondaryButtonStyle}"
                             HeightRequest="38"
                             Padding="16,8" />
-                    <Button Text="{Binding SettingsToggleText}"
-                            Command="{Binding ToggleSettingsPanelCommand}"
-                            Style="{StaticResource GameSecondaryButtonStyle}"
-                            HeightRequest="38"
-                            Padding="16,8" />
                 </HorizontalStackLayout>
             </Grid>
         </Border>
@@ -106,11 +101,6 @@
                             Padding="16,9" />
                     <Button Text="Reset Stats"
                             Command="{Binding ResetStatsCommand}"
-                            Style="{StaticResource GameSecondaryButtonStyle}"
-                            HeightRequest="40"
-                            Padding="16,9" />
-                    <Button Text="{Binding SettingsToggleText}"
-                            Command="{Binding ToggleSettingsPanelCommand}"
                             Style="{StaticResource GameSecondaryButtonStyle}"
                             HeightRequest="40"
                             Padding="16,9" />
@@ -1199,6 +1189,165 @@
                 </Border>
             </Grid>
 
+            <Grid x:Name="StartupSequenceScrim"
+                  IsVisible="False"
+                  BackgroundColor="#01050A"
+                  ZIndex="28"
+                  InputTransparent="False">
+                <Grid>
+                    <BoxView Color="#020913" />
+                    <Border Margin="0"
+                            StrokeThickness="0"
+                            BackgroundColor="#FF051323">
+                        <Border.Background>
+                            <RadialGradientBrush Center="0.5,0.42"
+                                                 Radius="0.95">
+                                <GradientStop Color="#FF0C233B" Offset="0.0" />
+                                <GradientStop Color="#FF06182B" Offset="0.45" />
+                                <GradientStop Color="#FF02070F" Offset="1.0" />
+                            </RadialGradientBrush>
+                        </Border.Background>
+                    </Border>
+
+                    <Grid RowDefinitions="Auto,*,Auto"
+                          Padding="42,32">
+                        <HorizontalStackLayout Spacing="14"
+                                               Opacity="0.16"
+                                               HorizontalOptions="Fill"
+                                               VerticalOptions="Start">
+                            <BoxView WidthRequest="160"
+                                     HeightRequest="2"
+                                     Color="#3CD7FF" />
+                            <BoxView WidthRequest="120"
+                                     HeightRequest="2"
+                                     Color="#1F88B4" />
+                            <BoxView WidthRequest="220"
+                                     HeightRequest="2"
+                                     Color="#3CD7FF" />
+                        </HorizontalStackLayout>
+
+                        <Grid Grid.Row="1">
+                            <Grid x:Name="StartupCreatorScene"
+                                  Opacity="0"
+                                  IsVisible="True">
+                                <VerticalStackLayout Spacing="10"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Label x:Name="StartupCreatorPrefixLabel"
+                                           Text=""
+                                           FontFamily="Impact"
+                                           FontSize="32"
+                                           CharacterSpacing="3"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#7FDFFF" />
+                                    <Label x:Name="StartupCreatorNameLabel"
+                                           Text=""
+                                           FontFamily="Impact"
+                                           FontSize="74"
+                                           CharacterSpacing="1.5"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#DDF9FF">
+                                        <Label.Shadow>
+                                            <Shadow Brush="#AA0BE8FF"
+                                                    Opacity="0.95"
+                                                    Radius="26"
+                                                    Offset="0,0" />
+                                        </Label.Shadow>
+                                    </Label>
+                                    <Label Text="COMMAND SIGNAL VERIFIED"
+                                           FontFamily="Impact"
+                                           FontSize="16"
+                                           CharacterSpacing="6"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#5CB9D7"
+                                           Opacity="0.86" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <Grid x:Name="StartupVsCodeScene"
+                                  Opacity="0"
+                                  IsVisible="False">
+                                <VerticalStackLayout Spacing="16"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Border WidthRequest="176"
+                                            HeightRequest="176"
+                                            Stroke="#4FD4FF"
+                                            StrokeThickness="1.6"
+                                            StrokeShape="RoundRectangle 42"
+                                            Padding="28"
+                                            BackgroundColor="#180B1B2A">
+                                        <Image Source="vscode_logo.svg"
+                                               Aspect="AspectFit" />
+                                    </Border>
+                                    <Label x:Name="StartupVsCodeLabel"
+                                           Text=""
+                                           FontFamily="Impact"
+                                           FontSize="42"
+                                           CharacterSpacing="2"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#E6FBFF" />
+                                    <Label Text="TACTICAL SYSTEMS FORGED IN VISUAL STUDIO CODE"
+                                           FontFamily="Impact"
+                                           FontSize="14"
+                                           CharacterSpacing="4.5"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#6FCBE9"
+                                           Opacity="0.84" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <Grid x:Name="StartupTitleScene"
+                                  Opacity="0"
+                                  IsVisible="False">
+                                <VerticalStackLayout Spacing="-4"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Label x:Name="StartupTitleTopLabel"
+                                           Text="MAUI"
+                                           FontFamily="Impact"
+                                           FontSize="38"
+                                           CharacterSpacing="8"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#85E7FF"
+                                           Opacity="0.92" />
+                                    <Label x:Name="StartupTitleMainLabel"
+                                           Text="Battleship"
+                                           FontFamily="Impact"
+                                           FontSize="84"
+                                           CharacterSpacing="2"
+                                           HorizontalTextAlignment="Center"
+                                           TextColor="#E9FCFF">
+                                        <Label.Shadow>
+                                            <Shadow Brush="#AA1AD8FF"
+                                                    Opacity="1"
+                                                    Radius="30"
+                                                    Offset="0,0" />
+                                        </Label.Shadow>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Grid>
+
+                        <Border Grid.Row="2"
+                                x:Name="StartupSkipChip"
+                                HorizontalOptions="Center"
+                                Padding="14,8"
+                                Stroke="#5DCBFF"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 18"
+                                BackgroundColor="#38102231">
+                            <Label Text="PRESS ESC TO SKIP INTRO"
+                                   FontFamily="Impact"
+                                   FontSize="12"
+                                   CharacterSpacing="4"
+                                   HorizontalTextAlignment="Center"
+                                   TextColor="#B8F5FF" />
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+
             <Grid x:Name="SettingsScrim"
                   IsVisible="{Binding IsSettingsOpen}"
                   BackgroundColor="#360b1320"
@@ -1213,24 +1362,59 @@
                         Padding="18,16"
                         BackgroundColor="{DynamicResource GameColorSettingsCard}">
                     <VerticalStackLayout Spacing="10">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="12">
                             <VerticalStackLayout Spacing="2">
-                                <Label Text="Command Deck Settings"
+                                <Label Text="Esc Command Menu"
                                        Style="{StaticResource GameSectionLabelStyle}"
                                        FontSize="24"
                                        TextColor="{DynamicResource GameColorAccent}" />
-                                <Label Text="Popup command console. Gameplay remains visible behind this panel."
+                                <Label Text="Press Esc to resume. The board stays visible behind this command console."
                                        Style="{StaticResource GameCaptionLabelStyle}"
                                        FontSize="13"
                                        TextColor="{DynamicResource GameColorTextMuted}" />
                             </VerticalStackLayout>
-                            <Button Grid.Column="1"
-                                    Text="Close"
-                                    Command="{Binding ToggleSettingsPanelCommand}"
-                                    Style="{StaticResource GameSecondaryButtonStyle}"
-                                    HeightRequest="36"
-                                    Padding="12,7" />
+                            <HorizontalStackLayout Grid.Column="1"
+                                                   Spacing="8"
+                                                   VerticalOptions="Center">
+                                <Button Text="Resume"
+                                        Command="{Binding ToggleSettingsPanelCommand}"
+                                        Style="{StaticResource GamePrimaryButtonStyle}"
+                                        HeightRequest="36"
+                                        Padding="12,7" />
+                            </HorizontalStackLayout>
                         </Grid>
+
+                        <FlexLayout Direction="Row"
+                                    Wrap="Wrap"
+                                    JustifyContent="Start"
+                                    AlignItems="Center">
+                            <Button Text="Toggle Full Screen"
+                                    Clicked="OnToggleFullScreenClicked"
+                                    Style="{StaticResource GameSecondaryButtonStyle}"
+                                    HeightRequest="38"
+                                    Padding="12,7"
+                                    Margin="0,0,8,8" />
+                            <Button Text="New Mission"
+                                    Command="{Binding NewGameCommand}"
+                                    Style="{StaticResource GameSecondaryButtonStyle}"
+                                    HeightRequest="38"
+                                    Padding="12,7"
+                                    Margin="0,0,8,8" />
+                            <Button Text="Reset Stats"
+                                    Command="{Binding ResetStatsCommand}"
+                                    Style="{StaticResource GameSecondaryButtonStyle}"
+                                    HeightRequest="38"
+                                    Padding="12,7"
+                                    Margin="0,0,8,8" />
+                            <Button Text="Disconnect"
+                                    Command="{Binding DisconnectLanCommand}"
+                                    IsVisible="{Binding IsLanConnected}"
+                                    Style="{StaticResource GameSecondaryButtonStyle}"
+                                    HeightRequest="38"
+                                    Padding="12,7"
+                                    Margin="0,0,8,8" />
+                        </FlexLayout>
 
                         <Border Style="{StaticResource GameCardBorderStyle}"
                                 BackgroundColor="{DynamicResource GameColorPanel}"

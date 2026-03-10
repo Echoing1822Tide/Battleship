@@ -195,6 +195,52 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void HandleEscapeKey_FromIntroOverlay_SkipsWelcomeOverlay()
+    {
+        var musicService = new RecordingBackgroundMusicService();
+        var vm = new BoardViewModel(
+            new Random(121),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with
+            {
+                HasSeenCommandBriefing = false,
+                MusicEnabled = true,
+                MusicVolume = 0.25,
+                HasConfiguredMusicPreference = true
+            }),
+            new NoOpFeedbackService(),
+            musicService);
+
+        Assert.True(vm.IsOverlayVisible);
+
+        vm.HandleEscapeKey();
+
+        Assert.False(vm.IsOverlayVisible);
+        Assert.True(musicService.LastEnabled);
+        Assert.Equal(0.25, musicService.LastVolume, 3);
+    }
+
+    [Fact]
+    public void HandleEscapeKey_TogglesCommandMenu_WhenGameplayIsLive()
+    {
+        var vm = new BoardViewModel(
+            new Random(122),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with { HasSeenCommandBriefing = false }),
+            new NoOpFeedbackService());
+
+        vm.DismissOverlayCommand.Execute(null);
+
+        Assert.False(vm.IsSettingsOpen);
+
+        vm.HandleEscapeKey();
+        Assert.True(vm.IsSettingsOpen);
+
+        vm.HandleEscapeKey();
+        Assert.False(vm.IsSettingsOpen);
+    }
+
+    [Fact]
     public void PlayerCellTappedCommand_PlacesSelectedShip()
     {
         var vm = new BoardViewModel(new Random(13));

@@ -1,5 +1,4 @@
 using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Storage;
 #if WINDOWS
 using Windows.Globalization;
 using Windows.Media.Core;
@@ -40,6 +39,8 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
     private static readonly Lazy<Dictionary<string, MediaPlayer>?> EffectsPlayers =
         new(CreateEffectsPlayers, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly SemaphoreSlim CommanderVoiceLock = new(1, 1);
+    private static readonly Lazy<Dictionary<string, MediaPlayer>?> CommanderVoicePlayers =
+        new(CreateCommanderVoicePlayers, LazyThreadSafetyMode.ExecutionAndPublication);
     private static MediaPlayer? _commanderVoicePlayer;
     private static SpeechSynthesizer? _commanderVoiceSynthesizer;
     private static SpeechSynthesisStream? _activeCommanderVoiceStream;
@@ -272,6 +273,9 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
 #if WINDOWS
     private static async Task TrySpeakCommanderCueAsync(GameFeedbackCue cue, double soundFxVolume)
     {
+        if (TryPlayCommanderVoiceClip(cue, soundFxVolume))
+            return;
+
         string? phrase = cue switch
         {
             GameFeedbackCue.Hit => "Target hit!",
@@ -321,6 +325,41 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         }
     }
 
+    private static bool TryPlayCommanderVoiceClip(GameFeedbackCue cue, double soundFxVolume)
+    {
+        string? clip = cue switch
+        {
+            GameFeedbackCue.Hit => AppAudio.CommanderTargetHit,
+            GameFeedbackCue.Miss => AppAudio.CommanderTargetMiss,
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(clip))
+            return false;
+
+        try
+        {
+            var players = CommanderVoicePlayers.Value;
+            if (players is null || !players.TryGetValue(clip, out var player))
+                return false;
+
+            lock (EffectsLock)
+            {
+                player.Volume = Math.Clamp(Math.Max(0.24, soundFxVolume), 0, 1);
+                player.Pause();
+                if (player.PlaybackSession is not null)
+                    player.PlaybackSession.Position = TimeSpan.Zero;
+                player.Play();
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static SpeechSynthesizer CreateCommanderVoiceSynthesizer()
     {
         var synthesizer = new SpeechSynthesizer();
@@ -366,7 +405,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
             var players = new Dictionary<string, MediaPlayer>(StringComparer.OrdinalIgnoreCase);
             foreach (var track in tracks)
             {
-                string? path = ResolveAudioPath(track);
+                string? path = AppAudio.ResolvePath(track);
                 if (string.IsNullOrWhiteSpace(path))
                     continue;
 
@@ -390,6 +429,41 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         }
     }
 
+    private static Dictionary<string, MediaPlayer>? CreateCommanderVoicePlayers()
+    {
+        try
+        {
+            string[] clips =
+            {
+                AppAudio.CommanderTargetHit,
+                AppAudio.CommanderTargetMiss
+            };
+
+            var players = new Dictionary<string, MediaPlayer>(StringComparer.OrdinalIgnoreCase);
+            foreach (string clip in clips)
+            {
+                string? path = AppAudio.ResolvePath(clip);
+                if (string.IsNullOrWhiteSpace(path))
+                    continue;
+
+                players[clip] = new MediaPlayer
+                {
+                    IsLoopingEnabled = false,
+                    AutoPlay = false,
+                    AudioCategory = MediaPlayerAudioCategory.GameEffects,
+                    Volume = 1,
+                    Source = MediaSource.CreateFromUri(new Uri(path))
+                };
+            }
+
+            return players.Count == 0 ? null : players;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static TimeSpan ResolveClipStartOffset(string fileName)
     {
         if (fileName.StartsWith("Waterside_Explosion_Water_Sound_Effects", StringComparison.OrdinalIgnoreCase))
@@ -398,33 +472,6 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         return TimeSpan.Zero;
     }
 #endif
-
-    private static string? ResolveAudioPath(string fileName)
-    {
-        try
-        {
-            string appBase = AppContext.BaseDirectory;
-            string[] candidates =
-            {
-                Path.Combine(appBase, fileName),
-                Path.Combine(appBase, "Resources", "Audio", fileName),
-                Path.Combine(appBase, "Assets", fileName),
-                Path.Combine(FileSystem.Current.AppDataDirectory, fileName)
-            };
-
-            foreach (var candidate in candidates)
-            {
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-        }
-        catch
-        {
-            // Ignore and fall through to null.
-        }
-
-        return null;
-    }
 
     private static void TryPlayHaptics(GameFeedbackCue cue, bool reduceMotion)
     {

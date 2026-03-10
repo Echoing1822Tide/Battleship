@@ -79,10 +79,12 @@ $applicationTitle
 1. Extract the full zip to a normal folder on each PC.
 2. Open $exeName on both PCs.
 3. If Windows shows a SmartScreen prompt for this unsigned build, choose More info > Run anyway.
-4. Press F11 any time you want to toggle true full-screen mode on or off.
-5. On one PC, leave the default port or choose another unused port and click Host LAN.
-6. On the other PC, enter the host PC's LAN IP and the same port, then click Join LAN.
-7. Both players place fleets locally. The host fires first after both fleets are ready.
+4. The game launches in borderless full screen and plays its startup intro automatically.
+5. Press Esc if you want to skip the intro and jump straight to the game.
+6. Press F11 any time you want to toggle true full-screen mode on or off.
+7. On one PC, leave the default port or choose another unused port and click Host LAN.
+8. On the other PC, enter the host PC's LAN IP and the same port, then click Join LAN.
+9. Both players place fleets locally. The host fires first after both fleets are ready.
 
 Target platform: Windows 10/11 x64
 "@
@@ -94,8 +96,10 @@ $applicationTitle
 1. Extract the full zip to a normal folder.
 2. Open $exeName.
 3. If Windows shows a SmartScreen prompt for this unsigned build, choose More info > Run anyway.
-4. Press F11 any time you want to toggle true full-screen mode on or off.
-5. Start a new mission, place your fleet, and battle the onboard CPU opponent.
+4. The game launches in borderless full screen and plays its startup intro automatically.
+5. Press Esc if you want to skip the intro and jump straight to the game.
+6. Press F11 any time you want to toggle true full-screen mode on or off.
+7. Start a new mission, place your fleet, and battle the onboard CPU opponent.
 
 Target platform: Windows 10/11 x64
 "@

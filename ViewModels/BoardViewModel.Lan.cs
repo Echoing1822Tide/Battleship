@@ -163,7 +163,7 @@ public partial class BoardViewModel
     public string LanConnectionHelpText => IsCpuMode
         ? AppVariant.IsLanEdition
             ? "Install this LAN build on both PCs. Host on one PC, then join from the other with the host IP and the same port."
-            : "This public release is the original single-player build. CPU difficulty remains available in Settings."
+            : "This public release is the original single-player build. CPU difficulty remains available in the Esc command menu."
         : string.IsNullOrWhiteSpace(_lanLocalAddressSummary)
             ? $"Share this PC's LAN IP and port {ResolveLanPortOrDefault()} with the other player."
             : $"This PC LAN IPs: {_lanLocalAddressSummary}. The joining player should enter one of these IPs and port {ResolveLanPortOrDefault()}.";
@@ -215,7 +215,7 @@ public partial class BoardViewModel
     {
         return IsLanMode
             ? "1) Put this LAN build on both PCs and launch it on both machines.\n2) On one PC choose Host LAN. On the other PC enter the host LAN IP and choose Join LAN.\n3) Place your fleets locally on both PCs.\n4) After both fleets are deployed, the host takes the first shot. If Windows prompts for firewall access, allow the app on your private network."
-            : "1) Pick a ship, then hover over Your Fleet to preview live placement.\n2) Right-click to rotate. Left-click to deploy.\n3) Fire on Enemy Waters and sink the full fleet before the CPU sinks yours.\n4) Use Theme Shift for dramatic style changes and Settings for music and FX.";
+            : "1) Pick a ship, then hover over Your Fleet to preview live placement.\n2) Right-click to rotate. Left-click to deploy.\n3) Fire on Enemy Waters and sink the full fleet before the CPU sinks yours.\n4) Use Theme Shift for dramatic style changes and the Esc command menu for music, FX, and accessibility options.";
     }
 
     private string BuildStartNewGameStatusMessage()

@@ -1000,6 +1000,28 @@ public partial class BoardViewModel : ObservableObject
         ApplyMusicSettings();
     }
 
+    public void HandleEscapeKey()
+    {
+        if (IsOverlayVisible)
+        {
+            bool canSkipWelcomeOverlay = !ShowOverlayRecap
+                && !ShowOverlayAnalytics
+                && string.Equals(OverlayPrimaryActionText, "Let's Fight!", StringComparison.OrdinalIgnoreCase);
+
+            if (canSkipWelcomeOverlay)
+                DismissOverlay();
+
+            return;
+        }
+
+        IsSettingsOpen = !IsSettingsOpen;
+    }
+
+    public void CloseCommandMenu()
+    {
+        IsSettingsOpen = false;
+    }
+
     private void LoadStats()
     {
         var snapshot = _statsStore.Load();

@@ -1,11 +1,11 @@
 using System.Runtime.CompilerServices;
+using Microsoft.Maui.Controls;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
 using WinRT.Interop;
 using WinUiWindow = Microsoft.UI.Xaml.Window;
-using WinUiKeyboardAccelerator = Microsoft.UI.Xaml.Input.KeyboardAccelerator;
 
 namespace BattleshipMaui.WinUI;
 
@@ -18,95 +18,143 @@ internal static class FullScreenHotkeyController
         _ = Bindings.GetValue(window, static createdWindow => new WindowHotkeyBinding(createdWindow));
     }
 
+    public static void ToggleCurrentWindow()
+    {
+        if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView is not WinUiWindow window)
+            return;
+
+        WindowHotkeyBinding binding = Bindings.TryGetValue(window, out var existingBinding)
+            ? existingBinding
+            : Bindings.GetValue(window, static createdWindow => new WindowHotkeyBinding(createdWindow));
+
+        binding.ToggleFullScreen();
+    }
+
     private sealed class WindowHotkeyBinding
     {
         private readonly WinUiWindow _window;
-        private readonly WinUiKeyboardAccelerator _fullScreenAccelerator;
+        private FrameworkElement? _attachedRoot;
         private bool _restoreMaximized;
+        private bool _startupFullScreenApplied;
 
         public WindowHotkeyBinding(WinUiWindow window)
         {
             _window = window;
-            _fullScreenAccelerator = new WinUiKeyboardAccelerator
-            {
-                Key = VirtualKey.F11
-            };
-
-            _fullScreenAccelerator.Invoked += OnFullScreenInvoked;
             _window.Activated += OnWindowActivated;
             AttachToRoot();
+            EnsureStartupFullScreen();
         }
 
         private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
         {
             AttachToRoot();
+            EnsureStartupFullScreen();
         }
 
         private void AttachToRoot()
         {
-            if (_window.Content is not FrameworkElement root)
-            {
+            if (ReferenceEquals(_attachedRoot, _window.Content))
                 return;
-            }
 
-            if (!root.KeyboardAccelerators.Contains(_fullScreenAccelerator))
-            {
-                root.KeyboardAccelerators.Add(_fullScreenAccelerator);
-            }
+            if (_attachedRoot is not null)
+                _attachedRoot.KeyDown -= OnRootKeyDown;
+
+            _attachedRoot = _window.Content as FrameworkElement;
+            if (_attachedRoot is not null)
+                _attachedRoot.KeyDown += OnRootKeyDown;
         }
 
-        private void OnFullScreenInvoked(WinUiKeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        private void OnRootKeyDown(object sender, KeyRoutedEventArgs args)
         {
-            ToggleFullScreen();
-            args.Handled = true;
+            if (args.Handled)
+                return;
+
+            switch (args.Key)
+            {
+                case VirtualKey.F11:
+                    ToggleFullScreen();
+                    args.Handled = true;
+                    break;
+                case VirtualKey.Escape:
+                    args.Handled = TryRouteEscapeCommand();
+                    break;
+            }
         }
 
-        private void ToggleFullScreen()
+        private bool TryRouteEscapeCommand()
+        {
+            try
+            {
+                if (Shell.Current?.CurrentPage is MainPage page)
+                {
+                    page.HandleEscapeKey();
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private void EnsureStartupFullScreen()
+        {
+            if (_startupFullScreenApplied)
+                return;
+
+            _startupFullScreenApplied = true;
+            SetFullScreen(enabled: true);
+        }
+
+        public void ToggleFullScreen()
         {
             AppWindow? appWindow = TryGetAppWindow(_window);
             if (appWindow is null)
+                return;
+
+            bool enableFullScreen = appWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen;
+            SetFullScreen(enableFullScreen);
+        }
+
+        private void SetFullScreen(bool enabled)
+        {
+            AppWindow? appWindow = TryGetAppWindow(_window);
+            if (appWindow is null)
+                return;
+
+            if (enabled)
             {
+                if (appWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen)
+                    return;
+
+                if (appWindow.Presenter is OverlappedPresenter overlapped)
+                    _restoreMaximized = overlapped.State == OverlappedPresenterState.Maximized;
+                else
+                    _restoreMaximized = false;
+
+                appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
                 return;
             }
 
-            if (appWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen)
-            {
-                appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-
-                if (appWindow.Presenter is OverlappedPresenter overlappedPresenter)
-                {
-                    if (_restoreMaximized)
-                    {
-                        overlappedPresenter.Maximize();
-                    }
-                    else
-                    {
-                        overlappedPresenter.Restore();
-                    }
-                }
-
+            if (appWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen)
                 return;
-            }
 
-            if (appWindow.Presenter is OverlappedPresenter overlapped)
-            {
-                _restoreMaximized = overlapped.State == OverlappedPresenterState.Maximized;
-            }
+            appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            if (appWindow.Presenter is not OverlappedPresenter restoredPresenter)
+                return;
+
+            if (_restoreMaximized)
+                restoredPresenter.Maximize();
             else
-            {
-                _restoreMaximized = false;
-            }
-
-            appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+                restoredPresenter.Restore();
         }
 
         private static AppWindow? TryGetAppWindow(WinUiWindow window)
         {
             nint hwnd = WindowNative.GetWindowHandle(window);
             if (hwnd == 0)
-            {
                 return null;
-            }
 
             Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             return AppWindow.GetFromWindowId(windowId);
