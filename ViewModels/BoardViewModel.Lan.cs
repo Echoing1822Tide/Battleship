@@ -207,6 +207,8 @@ public partial class BoardViewModel
         OnPropertyChanged(nameof(LanMatchTabBackground));
         OnPropertyChanged(nameof(LanStatusLine));
         OnPropertyChanged(nameof(LanConnectionHelpText));
+        UpdateBoardRenderMetrics();
+        RefreshGameplayChrome();
     }
 
     private string BuildGameStartOverlaySubtitle()
@@ -349,6 +351,7 @@ public partial class BoardViewModel
     private async Task DisconnectLanAsync()
     {
         await _lanSessionService.DisconnectAsync();
+        IsIntelBubbleVisible = false;
         StatusMessage = "LAN session closed.";
     }
 
@@ -388,6 +391,7 @@ public partial class BoardViewModel
                 case LanConnectionState.Disconnected:
                     _isRemoteFleetReady = false;
                     _hasSharedLocalFleetWithPeer = false;
+                    IsIntelBubbleVisible = false;
                     ClearPendingLanShotLock();
                     SetEnemyTurnResolutionState(false);
                     SetPlayerShotResolutionState(false);
@@ -417,11 +421,11 @@ public partial class BoardViewModel
                     break;
 
                 case LanPayloadKind.Shot:
-                    HandleRemoteShotReceived(e.Shot);
+                    _ = HandleRemoteShotReceivedAsync(e.Shot);
                     break;
 
                 case LanPayloadKind.ShotResult:
-                    HandleRemoteShotResultReceived(e.ShotResult);
+                    _ = HandleRemoteShotResultReceivedAsync(e.ShotResult);
                     break;
 
                 case LanPayloadKind.Reset:
@@ -499,6 +503,17 @@ public partial class BoardViewModel
         try
         {
             string targetCoordinate = ToBoardCoordinate(targetCell.Row, targetCell.Col);
+            if (ShouldUseCinematicTurnPacing)
+            {
+                await PauseForDramaAsync(
+                    420,
+                    $"Fire mission approved for {targetCoordinate}.",
+                    showTransitionCard: true,
+                    transitionTitle: "Fire Mission",
+                    targetCoordinate: targetCoordinate,
+                    accentColor: ResolveThemeColor("GameColorAccent", "#35F4FF"));
+            }
+
             await _lanSessionService.SendShotAsync(new BoardCoordinate(targetCell.Row, targetCell.Col));
             TurnMessage = "Shot in flight";
             StatusMessage = $"Shot transmitted to {targetCoordinate}. Awaiting battle report.";
@@ -511,7 +526,37 @@ public partial class BoardViewModel
         }
     }
 
-    private void HandleRemoteShotReceived(BoardCoordinate target)
+    private async Task HandleRemoteShotReceivedAsync(BoardCoordinate target)
+    {
+        int sessionId = _gameSessionId;
+        string coordinate = ToBoardCoordinate(target.Row, target.Col);
+
+        if (ShouldUseCinematicTurnPacing)
+        {
+            SetEnemyTurnResolutionState(true);
+            try
+            {
+                await PauseForDramaAsync(
+                    760,
+                    $"Incoming hostile strike plotted at {coordinate}.",
+                    showTransitionCard: true,
+                    transitionTitle: "Incoming Fire",
+                    targetCoordinate: coordinate,
+                    accentColor: ResolveThemeColor("GameColorWarning", "#FFD86B"));
+            }
+            finally
+            {
+                SetEnemyTurnResolutionState(false);
+            }
+        }
+
+        if (sessionId != _gameSessionId || IsGameOver)
+            return;
+
+        HandleRemoteShotReceivedCore(target, coordinate);
+    }
+
+    private void HandleRemoteShotReceivedCore(BoardCoordinate target, string coordinate)
     {
         if (_playerBoard is null)
             return;
@@ -528,8 +573,6 @@ public partial class BoardViewModel
 
         OnPropertyChanged(nameof(ScoreLine));
         EmitShotFeedback(shot);
-
-        string coordinate = ToBoardCoordinate(target.Row, target.Col);
         EnemyLastShotMessage = $"Enemy last shot: {coordinate} - {shot.Message}";
 
         bool defeated = _playerBoard.AllShipsSunk;
@@ -556,13 +599,40 @@ public partial class BoardViewModel
             return;
         }
 
+        if (shot.IsHit)
+            _ = ShowLanIntelBubbleAsync("Incoming Damage", BuildLanIntelBubbleMessage(coordinate, shot));
+
         IsPlayerTurn = true;
         TurnMessage = "Your turn";
         StatusMessage = $"{BuildEnemyShotCallout(coordinate, shot)} Your turn.";
         ApplyAutoBoardFocus();
     }
 
-    private void HandleRemoteShotResultReceived(LanShotResultPacket packet)
+    private async Task HandleRemoteShotResultReceivedAsync(LanShotResultPacket packet)
+    {
+        int sessionId = _gameSessionId;
+        string targetCoordinate = ToBoardCoordinate(packet.Row, packet.Col);
+
+        if (packet.Result is not AttackResult.AlreadyTried and not AttackResult.Invalid && ShouldUseCinematicTurnPacing)
+        {
+            await PauseForDramaAsync(
+                720,
+                $"Battle report inbound from {targetCoordinate}.",
+                showTransitionCard: true,
+                transitionTitle: "Strike Camera",
+                targetCoordinate: targetCoordinate,
+                accentColor: packet.IsHit
+                    ? ResolveThemeColor("GameColorDanger", "#ff8a6b")
+                    : ResolveThemeColor("GameColorAccent", "#35F4FF"));
+        }
+
+        if (sessionId != _gameSessionId || IsGameOver)
+            return;
+
+        HandleRemoteShotResultReceivedCore(packet, targetCoordinate);
+    }
+
+    private void HandleRemoteShotResultReceivedCore(LanShotResultPacket packet, string targetCoordinate)
     {
         ClearPendingLanShotLock();
         SetPlayerShotResolutionState(false);
@@ -588,7 +658,7 @@ public partial class BoardViewModel
         ApplyShotResult(EnemyCells, shot);
         EmitShotFeedback(shot);
 
-        PlayerLastShotMessage = $"Your last shot: {ToBoardCoordinate(shot.Row, shot.Col)} - {shot.Message}";
+        PlayerLastShotMessage = $"Your last shot: {targetCoordinate} - {shot.Message}";
         StatusMessage = BuildPlayerShotCallout(shot);
         OnPropertyChanged(nameof(ScoreLine));
 
@@ -610,6 +680,9 @@ public partial class BoardViewModel
             ShowGameOverOverlay(GameOutcome.Win);
             return;
         }
+
+        if (shot.IsHit)
+            _ = ShowLanIntelBubbleAsync("Battle Report", BuildLanIntelBubbleMessage(targetCoordinate, shot));
 
         IsPlayerTurn = false;
         TurnMessage = "Opponent turn";
@@ -656,6 +729,20 @@ public partial class BoardViewModel
         catch
         {
         }
+    }
+
+    private static string BuildLanIntelBubbleMessage(string coordinate, ShotInfo shot)
+    {
+        return shot.Result switch
+        {
+            AttackResult.Sunk when !string.IsNullOrWhiteSpace(shot.SunkShipName) =>
+                $"{coordinate} confirmed. {shot.SunkShipName} destroyed.",
+            AttackResult.Hit when !string.IsNullOrWhiteSpace(shot.SunkShipName) =>
+                $"{coordinate} confirmed. {shot.SunkShipName} struck.",
+            AttackResult.Hit =>
+                $"{coordinate} confirmed. Enemy hull breached.",
+            _ => shot.Message
+        };
     }
 
     private static IReadOnlyList<ShipPlacementPacket> BuildFleetPlacementPackets(IEnumerable<Ship> fleet)

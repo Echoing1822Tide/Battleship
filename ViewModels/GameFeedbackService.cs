@@ -1,15 +1,24 @@
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
 #if WINDOWS
+using Windows.Globalization;
 using Windows.Media.Core;
 using Windows.Media.Playback;
+using Windows.Media.SpeechSynthesis;
 #endif
 
 namespace BattleshipMaui.ViewModels;
 
 public interface IGameFeedbackService
 {
-    void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null);
+    void Play(
+        GameFeedbackCue cue,
+        bool soundEnabled,
+        double soundFxVolume,
+        bool hapticsEnabled,
+        bool reduceMotion,
+        bool commanderVoiceEnabled,
+        string? shipName = null);
 }
 
 public sealed class DefaultGameFeedbackService : IGameFeedbackService
@@ -30,12 +39,27 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
     private static readonly object EffectsLock = new();
     private static readonly Lazy<Dictionary<string, MediaPlayer>?> EffectsPlayers =
         new(CreateEffectsPlayers, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly SemaphoreSlim CommanderVoiceLock = new(1, 1);
+    private static MediaPlayer? _commanderVoicePlayer;
+    private static SpeechSynthesizer? _commanderVoiceSynthesizer;
+    private static SpeechSynthesisStream? _activeCommanderVoiceStream;
 #endif
 
-    public void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
+    public void Play(
+        GameFeedbackCue cue,
+        bool soundEnabled,
+        double soundFxVolume,
+        bool hapticsEnabled,
+        bool reduceMotion,
+        bool commanderVoiceEnabled,
+        string? shipName = null)
     {
         if (soundEnabled)
+        {
             TryPlaySound(cue, shipName, soundFxVolume);
+            if (commanderVoiceEnabled)
+                _ = TrySpeakCommanderCueAsync(cue, soundFxVolume);
+        }
 
         if (hapticsEnabled)
             TryPlayHaptics(cue, reduceMotion);
@@ -246,6 +270,91 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
     }
 
 #if WINDOWS
+    private static async Task TrySpeakCommanderCueAsync(GameFeedbackCue cue, double soundFxVolume)
+    {
+        string? phrase = cue switch
+        {
+            GameFeedbackCue.Hit => "Target hit!",
+            GameFeedbackCue.Miss => "Target miss.",
+            GameFeedbackCue.Sunk => "Target destroyed!",
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(phrase))
+            return;
+
+        double volume = Math.Clamp(Math.Max(0.24, soundFxVolume), 0, 1);
+        bool lockHeld = false;
+
+        try
+        {
+            await CommanderVoiceLock.WaitAsync().ConfigureAwait(false);
+            lockHeld = true;
+
+            _activeCommanderVoiceStream?.Dispose();
+            _activeCommanderVoiceStream = null;
+
+            _commanderVoiceSynthesizer ??= CreateCommanderVoiceSynthesizer();
+            _commanderVoicePlayer ??= new MediaPlayer
+            {
+                IsLoopingEnabled = false,
+                AutoPlay = false,
+                AudioCategory = MediaPlayerAudioCategory.GameEffects,
+                Volume = volume
+            };
+
+            string ssml = BuildCommanderSsml(phrase);
+            _activeCommanderVoiceStream = await _commanderVoiceSynthesizer.SynthesizeSsmlToStreamAsync(ssml);
+
+            _commanderVoicePlayer.Pause();
+            _commanderVoicePlayer.Source = MediaSource.CreateFromStream(_activeCommanderVoiceStream, _activeCommanderVoiceStream.ContentType);
+            _commanderVoicePlayer.Volume = volume;
+            _commanderVoicePlayer.Play();
+        }
+        catch
+        {
+        }
+        finally
+        {
+            if (lockHeld)
+                CommanderVoiceLock.Release();
+        }
+    }
+
+    private static SpeechSynthesizer CreateCommanderVoiceSynthesizer()
+    {
+        var synthesizer = new SpeechSynthesizer();
+
+        try
+        {
+            VoiceInformation? preferredVoice = SpeechSynthesizer.AllVoices
+                .FirstOrDefault(voice =>
+                    voice.Gender == VoiceGender.Male &&
+                    voice.Language.StartsWith("en", StringComparison.OrdinalIgnoreCase));
+
+            if (preferredVoice is not null)
+                synthesizer.Voice = preferredVoice;
+        }
+        catch
+        {
+        }
+
+        return synthesizer;
+    }
+
+    private static string BuildCommanderSsml(string phrase)
+    {
+        return $$"""
+        <speak version="1.0" xml:lang="en-US">
+          <voice xml:lang="en-US">
+            <prosody pitch="-24%" rate="-8%" volume="+0dB">
+              {{phrase}}
+            </prosody>
+          </voice>
+        </speak>
+        """;
+    }
+
     private static Dictionary<string, MediaPlayer>? CreateEffectsPlayers()
     {
         try

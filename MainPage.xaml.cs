@@ -13,8 +13,8 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
-        EnsureBoardGridStructure(EnemyBoardCellsHost);
-        EnsureBoardGridStructure(PlayerBoardCellsHost);
+        EnsureBoardGridStructure(EnemyBoardCellsHost, BoardViewModel.CellSize);
+        EnsureBoardGridStructure(PlayerBoardCellsHost, BoardViewModel.CellSize);
     }
 
     protected override void OnBindingContextChanged()
@@ -28,6 +28,7 @@ public partial class MainPage : ContentPage
         if (_viewModel is not null)
         {
             _viewModel.ApplyBuildFlavorDefaults();
+            RefreshBoardGridStructure();
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _ = AnimateBoardModeTransitionAsync(_viewModel.BoardViewMode, instant: true);
         }
@@ -43,6 +44,7 @@ public partial class MainPage : ContentPage
 
         if (_viewModel is not null)
         {
+            RefreshBoardGridStructure();
             _viewModel.EnsureMusicPlayback();
             _ = AnimateBoardModeTransitionAsync(_viewModel.BoardViewMode, instant: true);
         }
@@ -70,6 +72,15 @@ public partial class MainPage : ContentPage
 
         if (e.PropertyName == nameof(BoardViewModel.IsSettingsOpen) && _viewModel.IsSettingsOpen)
             _ = AnimateSettingsPopupAsync();
+
+        if (e.PropertyName == nameof(BoardViewModel.IsTurnTransitionActive) && _viewModel.IsTurnTransitionActive)
+            _ = AnimateTurnTransitionAsync();
+
+        if (e.PropertyName == nameof(BoardViewModel.IsIntelBubbleVisible) && _viewModel.IsIntelBubbleVisible)
+            _ = AnimateIntelBubbleAsync();
+
+        if (e.PropertyName == nameof(BoardViewModel.CellPixelSize) || e.PropertyName == nameof(BoardViewModel.BoardPixelSize))
+            RefreshBoardGridStructure();
     }
 
     private async Task AnimateOverlayAsync(BoardViewModel vm)
@@ -191,6 +202,83 @@ public partial class MainPage : ContentPage
         _currentBoardMode = mode;
     }
 
+    private async Task AnimateTurnTransitionAsync()
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            if (_viewModel?.IsTurnTransitionActive != true)
+                return;
+
+            if (_viewModel.ReduceMotionMode)
+            {
+                TurnTransitionScrim.Opacity = 1;
+                TurnTransitionCard.Opacity = 1;
+                TurnTransitionCard.Scale = 1;
+                TurnTransitionReticle.Opacity = 1;
+                TurnTransitionReticle.Scale = 1;
+                TurnTransitionPulseRing.Opacity = 0.28;
+                TurnTransitionPulseRing.Scale = 1;
+                TurnTransitionCoordinateChip.Opacity = 1;
+                TurnTransitionCoordinateChip.Scale = 1;
+                TurnTransitionSweepHost.Rotation = 0;
+                return;
+            }
+
+            uint intro = ScaleDuration(320, AnimationRuntimeSettings.SpeedMultiplier);
+            uint sweep = ScaleDuration(900, AnimationRuntimeSettings.SpeedMultiplier);
+
+            TurnTransitionScrim.Opacity = 0;
+            TurnTransitionCard.Opacity = 0;
+            TurnTransitionCard.Scale = 0.92;
+            TurnTransitionReticle.Opacity = 0;
+            TurnTransitionReticle.Scale = 2.1;
+            TurnTransitionPulseRing.Opacity = 0.08;
+            TurnTransitionPulseRing.Scale = 0.84;
+            TurnTransitionCoordinateChip.Opacity = 0;
+            TurnTransitionCoordinateChip.Scale = 0.74;
+            TurnTransitionSweepHost.Rotation = 0;
+
+            await Task.WhenAll(
+                TurnTransitionScrim.FadeToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionCard.FadeToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionCard.ScaleToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionReticle.FadeToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionReticle.ScaleToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionPulseRing.FadeToAsync(0.3, intro, Easing.CubicOut),
+                TurnTransitionPulseRing.ScaleToAsync(1.12, intro, Easing.SinOut),
+                TurnTransitionCoordinateChip.FadeToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionCoordinateChip.ScaleToAsync(1, intro, Easing.SpringOut),
+                TurnTransitionSweepHost.RotateToAsync(360, sweep, Easing.Linear));
+        });
+    }
+
+    private async Task AnimateIntelBubbleAsync()
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            if (_viewModel?.IsIntelBubbleVisible != true)
+                return;
+
+            if (_viewModel.ReduceMotionMode)
+            {
+                IntelBubbleCard.Opacity = 1;
+                IntelBubbleCard.Scale = 1;
+                IntelBubbleCard.TranslationY = 0;
+                return;
+            }
+
+            uint duration = ScaleDuration(220, AnimationRuntimeSettings.SpeedMultiplier);
+            IntelBubbleCard.Opacity = 0;
+            IntelBubbleCard.Scale = 0.9;
+            IntelBubbleCard.TranslationY = -10;
+
+            await Task.WhenAll(
+                IntelBubbleCard.FadeToAsync(1, duration, Easing.CubicOut),
+                IntelBubbleCard.ScaleToAsync(1, duration, Easing.CubicOut),
+                IntelBubbleCard.TranslateToAsync(0, 0, duration, Easing.CubicOut));
+        });
+    }
+
     private async Task AnimateBoardModeTransitionAsync(BoardViewMode targetMode, bool instant)
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -208,18 +296,33 @@ public partial class MainPage : ContentPage
         });
     }
 
-    private static void EnsureBoardGridStructure(Grid host)
+    private void RefreshBoardGridStructure()
+    {
+        double cellSize = _viewModel?.CellPixelSize ?? BoardViewModel.CellSize;
+        EnsureBoardGridStructure(EnemyBoardCellsHost, cellSize);
+        EnsureBoardGridStructure(PlayerBoardCellsHost, cellSize);
+    }
+
+    private static void EnsureBoardGridStructure(Grid host, double cellSize)
     {
         if (host.RowDefinitions.Count == BoardViewModel.Size && host.ColumnDefinitions.Count == BoardViewModel.Size)
+        {
+            for (int index = 0; index < BoardViewModel.Size; index++)
+            {
+                host.RowDefinitions[index].Height = cellSize;
+                host.ColumnDefinitions[index].Width = cellSize;
+            }
+
             return;
+        }
 
         host.RowDefinitions.Clear();
         host.ColumnDefinitions.Clear();
 
         for (int index = 0; index < BoardViewModel.Size; index++)
         {
-            host.RowDefinitions.Add(new RowDefinition { Height = BoardViewModel.CellSize });
-            host.ColumnDefinitions.Add(new ColumnDefinition { Width = BoardViewModel.CellSize });
+            host.RowDefinitions.Add(new RowDefinition { Height = cellSize });
+            host.ColumnDefinitions.Add(new ColumnDefinition { Width = cellSize });
         }
     }
 }

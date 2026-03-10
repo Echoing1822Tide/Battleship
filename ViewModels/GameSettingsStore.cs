@@ -22,7 +22,11 @@ public readonly record struct GameSettingsSnapshot(
     bool MusicEnabled = true,
     double MusicVolume = 0.10,
     bool HasConfiguredMusicPreference = false,
-    double SoundFxVolume = 0.10)
+    double SoundFxVolume = 0.10,
+    bool TurnCinematicsEnabled = false,
+    bool HasConfiguredTurnCinematicsPreference = false,
+    bool CommanderVoiceEnabled = true,
+    bool HasConfiguredCommanderVoicePreference = false)
 {
     public static GameSettingsSnapshot Default => new(
         Difficulty: CpuDifficulty.Standard,
@@ -38,7 +42,11 @@ public readonly record struct GameSettingsSnapshot(
         MusicEnabled: true,
         MusicVolume: 0.10,
         HasConfiguredMusicPreference: false,
-        SoundFxVolume: 0.10);
+        SoundFxVolume: 0.10,
+        TurnCinematicsEnabled: false,
+        HasConfiguredTurnCinematicsPreference: false,
+        CommanderVoiceEnabled: true,
+        HasConfiguredCommanderVoicePreference: false);
 }
 
 public sealed class JsonFileGameSettingsStore : IGameSettingsStore

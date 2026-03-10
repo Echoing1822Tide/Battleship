@@ -23,6 +23,9 @@ public class BoardViewModelTests
         Assert.True(vm.CanPlaceShips);
         Assert.False(vm.CanFire);
         Assert.False(vm.ShowEnemyFleet);
+        Assert.Equal(AppVariant.IsSoloEdition, vm.TurnCinematicsEnabled);
+        Assert.True(vm.CommanderVoiceEnabled);
+        Assert.Equal(BoardViewModel.CellSize, vm.CellPixelSize);
         Assert.Equal(5, vm.EnemyShipSprites.Count);
         Assert.All(vm.EnemyShipSprites, ship => Assert.False(ship.IsRevealed));
         Assert.Equal(0, vm.CurrentGameTurns);
@@ -71,7 +74,11 @@ public class BoardViewModelTests
             LargeTextMode: true,
             ReduceMotionMode: true,
             SettingsPanelOpen: false,
-            HasSeenCommandBriefing: false));
+            HasSeenCommandBriefing: false,
+            TurnCinematicsEnabled: false,
+            HasConfiguredTurnCinematicsPreference: true,
+            CommanderVoiceEnabled: false,
+            HasConfiguredCommanderVoicePreference: true));
 
         var vm = new BoardViewModel(new Random(10), statsStore, settingsStore, new NoOpFeedbackService());
 
@@ -82,6 +89,8 @@ public class BoardViewModelTests
         Assert.True(vm.HighContrastMode);
         Assert.True(vm.LargeTextMode);
         Assert.True(vm.ReduceMotionMode);
+        Assert.False(vm.TurnCinematicsEnabled);
+        Assert.False(vm.CommanderVoiceEnabled);
         Assert.False(vm.IsSettingsOpen);
     }
 
@@ -233,6 +242,7 @@ public class BoardViewModelTests
 
         Assert.False(vm.IsPlacementPhase);
         Assert.True(vm.CanFire);
+        Assert.Equal(BoardViewModel.BattleCellSize, vm.CellPixelSize);
         Assert.Equal(5, vm.PlayerShipSprites.Count);
 
         var target = vm.EnemyCells[0];
@@ -622,6 +632,7 @@ public class BoardViewModelTests
 
         Assert.True(vm.SupportsLanEdition);
         Assert.True(vm.IsLanMode);
+        Assert.False(vm.TurnCinematicsEnabled);
         Assert.Contains("Host on one PC and join from the other", vm.StatusMessage);
         Assert.Contains("LAN IP", vm.LanConnectionHelpText);
     }
@@ -717,7 +728,14 @@ public class BoardViewModelTests
 
     private sealed class NoOpFeedbackService : IGameFeedbackService
     {
-        public void Play(GameFeedbackCue cue, bool soundEnabled, double soundFxVolume, bool hapticsEnabled, bool reduceMotion, string? shipName = null)
+        public void Play(
+            GameFeedbackCue cue,
+            bool soundEnabled,
+            double soundFxVolume,
+            bool hapticsEnabled,
+            bool reduceMotion,
+            bool commanderVoiceEnabled,
+            string? shipName = null)
         {
         }
     }

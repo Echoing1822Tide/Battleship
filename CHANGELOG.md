@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-03-10
+
+### Added
+- Added an optional LAN turn-cinematic strike overlay that shows incoming and outgoing target coordinates before the shot resolves.
+- Added a LAN hit intel bubble that appears after animated hit confirmations without interrupting miss flow.
+- Added commander-style spoken combat callouts for hit, miss, and ship-destroyed outcomes in the LAN release.
+
+### Changed
+- Increased board presentation size during combat so LAN matches devote most of the window to the 2 gameboards.
+- Collapsed the distracting top command sections during live gameplay into a compact combat header while keeping the full command deck available before combat.
+- Reduced LAN placement-board sizing and status-card pressure so the placement phase no longer hides rows `I` and `J`.
+
+### Release
+- `v2.1.0` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.1.0-win-x64.zip`.
+
+## [1.8.0] - 2026-03-10
+
+### Added
+- Added a default single-player turn-cinematic strike overlay to give CPU exchanges more suspense and readability.
+- Added commander-style spoken combat callouts for hit, miss, and ship-destroyed outcomes in the solo release.
+
+### Changed
+- Increased board presentation size during combat so the solo app uses the window primarily for the enemy and player boards.
+- Collapsed the top command sections during live gameplay into a compact combat header to reduce visual clutter.
+
+### Release
+- `v1.8.0` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `BattleshipMaui-v1.8.0-win-x64.zip`.
+
 ## [2.0.0] - 2026-03-07
 
 ### Added

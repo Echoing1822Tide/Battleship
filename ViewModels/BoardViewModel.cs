@@ -112,12 +112,12 @@ public partial class BoardViewModel : ObservableObject
         new("Destroyer", 2, "destroyer_2_pegs.png")
     };
 
-    public double BoardPixelSize => Size * CellSize;
-    public double BoardFramePixelSize => BoardPixelSize + (2 * BoardAxisRailSize) + (2 * BoardRailSpacing);
-    public double CellPixelSize => CellSize;
-    public double AxisRailPixelSize => BoardAxisRailSize;
-    public double BoardRailSpacingPixelSize => BoardRailSpacing;
-    public double MissPegPixelSize => MissPegSize;
+    public double BoardPixelSize => Size * BoardCellSize;
+    public double BoardFramePixelSize => BoardPixelSize + (2 * AxisRailPixelSize) + (2 * BoardRailSpacingPixelSize);
+    public double CellPixelSize => BoardCellSize;
+    public double AxisRailPixelSize => Math.Round(Math.Max(BoardAxisRailSize, BoardCellSize * 0.52), 1);
+    public double BoardRailSpacingPixelSize => Math.Round(Math.Max(BoardRailSpacing, BoardCellSize * 0.12), 1);
+    public double MissPegPixelSize => Math.Round(Math.Max(MissPegSize, BoardCellSize * 0.34), 1);
     public IReadOnlyList<string> RowLabels { get; } = Enumerable.Range(0, Size)
         .Select(i => ((char)('A' + i)).ToString())
         .ToArray();
@@ -178,6 +178,7 @@ public partial class BoardViewModel : ObservableObject
             OnPropertyChanged(nameof(CanPlaceShips));
             OnPropertyChanged(nameof(CanRotatePlacement));
             SyncEnemyHoverTarget();
+            RefreshGameplayChrome();
         }
     }
 
@@ -194,6 +195,8 @@ public partial class BoardViewModel : ObservableObject
             OnPropertyChanged(nameof(CanRotatePlacement));
             OnPropertyChanged(nameof(PlacementSelectionMessage));
             SyncEnemyHoverTarget();
+            UpdateBoardRenderMetrics();
+            RefreshGameplayChrome();
         }
     }
 
@@ -221,6 +224,7 @@ public partial class BoardViewModel : ObservableObject
             if (_turnMessage == value) return;
             _turnMessage = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CompactHeaderTitle));
         }
     }
 
@@ -232,6 +236,7 @@ public partial class BoardViewModel : ObservableObject
             if (_statusMessage == value) return;
             _statusMessage = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CompactHeaderStatus));
         }
     }
 
@@ -446,6 +451,7 @@ public partial class BoardViewModel : ObservableObject
             _isSettingsOpen = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SettingsToggleText));
+            RefreshGameplayChrome();
             SaveSettings();
         }
     }
@@ -814,6 +820,7 @@ public partial class BoardViewModel : ObservableObject
             if (_isOverlayVisible == value) return;
             _isOverlayVisible = value;
             OnPropertyChanged();
+            RefreshGameplayChrome();
         }
     }
 
@@ -1019,6 +1026,14 @@ public partial class BoardViewModel : ObservableObject
         _highContrastMode = settings.HighContrastMode;
         _largeTextMode = settings.LargeTextMode;
         _reduceMotionMode = settings.ReduceMotionMode;
+        _hasConfiguredTurnCinematicsPreference = settings.HasConfiguredTurnCinematicsPreference;
+        _turnCinematicsEnabled = _hasConfiguredTurnCinematicsPreference
+            ? settings.TurnCinematicsEnabled
+            : AppVariant.IsSoloEdition;
+        _hasConfiguredCommanderVoicePreference = settings.HasConfiguredCommanderVoicePreference;
+        _commanderVoiceEnabled = _hasConfiguredCommanderVoicePreference
+            ? settings.CommanderVoiceEnabled
+            : true;
         _isSettingsOpen = false;
         _hasSeenCommandBriefing = settings.HasSeenCommandBriefing;
     }
@@ -1064,7 +1079,11 @@ public partial class BoardViewModel : ObservableObject
             MusicEnabled: MusicEnabled,
             MusicVolume: MusicVolume,
             HasConfiguredMusicPreference: _hasConfiguredMusicPreference,
-            SoundFxVolume: SoundFxVolume));
+            SoundFxVolume: SoundFxVolume,
+            TurnCinematicsEnabled: TurnCinematicsEnabled,
+            HasConfiguredTurnCinematicsPreference: _hasConfiguredTurnCinematicsPreference,
+            CommanderVoiceEnabled: CommanderVoiceEnabled,
+            HasConfiguredCommanderVoicePreference: _hasConfiguredCommanderVoicePreference));
     }
 
     private static double GetAnimationSpeedMultiplier(AnimationSpeed speed)
@@ -1142,7 +1161,7 @@ public partial class BoardViewModel : ObservableObject
         }
     }
 
-    private bool ShouldUseCinematicTurnPacing => !ReduceMotionMode && CanUseMainThreadPacing();
+    private bool ShouldUseCinematicTurnPacing => TurnCinematicsEnabled && !ReduceMotionMode && CanUseMainThreadPacing();
 
     private void SetEnemyTurnResolutionState(bool isActive)
     {
@@ -1215,24 +1234,29 @@ public partial class BoardViewModel : ObservableObject
         int milliseconds,
         string transitionMessage,
         bool showThinkingPrelude = false,
-        bool showTransitionCard = true)
+        bool showTransitionCard = true,
+        string? transitionTitle = null,
+        string? targetCoordinate = null,
+        Color? accentColor = null)
     {
         if (showThinkingPrelude && ShouldUseCinematicTurnPacing)
             await ShowThinkingPreludeAsync();
 
         if (showTransitionCard)
         {
-            TurnTransitionTitle = "Command Update";
-            TurnTransitionMessage = transitionMessage;
-            IsThinkingPromptActive = false;
-            ThinkingDots = string.Empty;
-            TurnTransitionSpinnerColor = ResolveThemeColor("GameColorAccent", "#35F4FF");
+            ConfigureTurnTransition(
+                transitionTitle ?? "Command Update",
+                transitionMessage,
+                targetCoordinate,
+                accentColor,
+                isThinkingPrompt: false);
             IsTurnTransitionActive = true;
         }
         else
         {
             IsThinkingPromptActive = false;
             ThinkingDots = string.Empty;
+            TurnTransitionCoordinate = targetCoordinate ?? "--";
             IsTurnTransitionActive = false;
         }
 
@@ -1249,9 +1273,12 @@ public partial class BoardViewModel : ObservableObject
             return;
 
         IsTurnTransitionActive = true;
-        IsThinkingPromptActive = true;
-        TurnTransitionTitle = "Thinking";
-        TurnTransitionMessage = "Enemy command is evaluating tactical options";
+        ConfigureTurnTransition(
+            "Counterbattery Scan",
+            "Enemy command is evaluating tactical options",
+            coordinate: "--",
+            accentColor: ResolveThemeColor("GameColorAccent", "#35F4FF"),
+            isThinkingPrompt: true);
 
         var pulseColors = new[]
         {
@@ -1307,7 +1334,7 @@ public partial class BoardViewModel : ObservableObject
         TurnTransitionTitle = "Command Update";
         TurnTransitionMessage = string.Empty;
         ThinkingDots = string.Empty;
-        TurnTransitionSpinnerColor = ResolveThemeColor("GameColorAccent", "#35F4FF");
+        ResetTurnTransitionPresentation();
     }
 
     private void SetBoardViewMode(BoardViewMode mode)
@@ -1360,7 +1387,7 @@ public partial class BoardViewModel : ObservableObject
 
     private void EmitFeedback(GameFeedbackCue cue, string? shipName = null)
     {
-        _feedbackService.Play(cue, SoundEnabled, SoundFxVolume, HapticsEnabled, ReduceMotionMode, shipName);
+        _feedbackService.Play(cue, SoundEnabled, SoundFxVolume, HapticsEnabled, ReduceMotionMode, CommanderVoiceEnabled, shipName);
     }
 
     private void EmitShotFeedback(ShotInfo shot)
@@ -1635,6 +1662,7 @@ public partial class BoardViewModel : ObservableObject
         _gameSessionId++;
         ClearPlacementPreview();
         ClearTurnTransition();
+        IsIntelBubbleVisible = false;
         SetBoardViewMode(BoardViewMode.Player);
 
         TurnMessage = "Placement phase";
@@ -1785,7 +1813,8 @@ public partial class BoardViewModel : ObservableObject
             col,
             ship.Size,
             axis,
-            ship.Name);
+            ship.Name,
+            BoardCellSize);
         PlacementPreviewImageRotation = isVertical ? 90 : 0;
         PlacementPreviewImageScale = ShipSpriteVisualProfile.ResolveScale(
             _selectedPlacementShip.Name,
@@ -1917,7 +1946,8 @@ public partial class BoardViewModel : ObservableObject
             isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal,
             isEnemy: false,
             isRevealed: true,
-            animateFromBoardEdgeOnReveal: true);
+            animateFromBoardEdgeOnReveal: true,
+            cellSize: BoardCellSize);
 
         PlayerShipSprites.Add(sprite);
         _playerSpritesByName[ship.Name] = sprite;
@@ -1959,16 +1989,17 @@ public partial class BoardViewModel : ObservableObject
                 ship.Size,
                 isVertical ? ShipAxis.Vertical : ShipAxis.Horizontal,
                 isEnemy: true,
-                isRevealed: false);
+                isRevealed: false,
+                cellSize: BoardCellSize);
 
             EnemyShipSprites.Add(sprite);
             _enemySpritesByName[ship.Name] = sprite;
         }
     }
 
-    private static Rect BuildShipBounds(int startRow, int startCol, int shipSize, ShipAxis axis, string? shipName = null)
+    private static Rect BuildShipBounds(int startRow, int startCol, int shipSize, ShipAxis axis, string? shipName = null, double? cellSize = null)
     {
-        double cell = CellSize;
+        double cell = cellSize ?? CellSize;
         double inset = ShipVisualInset;
         double endBleed = ShipSpriteVisualProfile.ResolveEndBleed(shipName);
         double crossBleed = ShipSpriteVisualProfile.ResolveCrossAxisBleed(shipName);
@@ -2199,8 +2230,11 @@ public partial class BoardViewModel : ObservableObject
             targetCell.SetTargetLocked(true);
             await PauseForDramaAsync(
                 PlayerTargetLockDelayMilliseconds,
-                $"Target lock acquired at {targetCoordinate}...",
-                showTransitionCard: false);
+                $"Target lock acquired at {targetCoordinate}. Strike package inbound.",
+                showTransitionCard: true,
+                transitionTitle: "Fire Mission",
+                targetCoordinate: targetCoordinate,
+                accentColor: ResolveThemeColor("GameColorAccent", "#35F4FF"));
             if (sessionId != _gameSessionId || IsGameOver)
                 return;
 
@@ -2332,7 +2366,13 @@ public partial class BoardViewModel : ObservableObject
         targetCell?.SetTargetLocked(true);
         try
         {
-            await PauseForDramaAsync(_random.Next(260, 541), $"Enemy lock acquired at {targetCoordinate}...", showTransitionCard: false);
+            await PauseForDramaAsync(
+                _random.Next(260, 541),
+                $"Enemy lock acquired at {targetCoordinate}. Brace for impact.",
+                showTransitionCard: true,
+                transitionTitle: "Incoming Fire",
+                targetCoordinate: targetCoordinate,
+                accentColor: ResolveThemeColor("GameColorWarning", "#FFD86B"));
             if (sessionId != _gameSessionId || IsGameOver)
                 return;
 
@@ -2355,7 +2395,15 @@ public partial class BoardViewModel : ObservableObject
 
             EnemyLastShotMessage = $"Enemy last shot: {targetCoordinate} - {enemyShot.Message}";
             StatusMessage = BuildEnemyShotCallout(targetCoordinate, enemyShot);
-            await PauseForDramaAsync(enemyShot.IsHit ? 280 : 220, StatusMessage, showTransitionCard: false);
+            await PauseForDramaAsync(
+                enemyShot.IsHit ? 320 : 240,
+                StatusMessage,
+                showTransitionCard: true,
+                transitionTitle: enemyShot.IsHit ? "Impact Report" : "Splash Report",
+                targetCoordinate: targetCoordinate,
+                accentColor: enemyShot.IsHit
+                    ? ResolveThemeColor("GameColorDanger", "#ff8a6b")
+                    : ResolveThemeColor("GameColorAccent", "#35F4FF"));
             if (sessionId != _gameSessionId || IsGameOver)
                 return;
 
@@ -2758,6 +2806,7 @@ public class ShipSpriteVm : ObservableObject
     private bool _isSunk;
     private bool _isRevealed;
     private bool _hasConsumedPlacementEntry;
+    private double _cellSize;
 
     public string Name { get; }
     public string ImageSource { get; }
@@ -2773,7 +2822,7 @@ public class ShipSpriteVm : ObservableObject
     {
         get
         {
-            double cell = BoardViewModel.CellSize;
+            double cell = _cellSize;
             double inset = BoardViewModel.ShipVisualInset;
             double endBleed = ShipSpriteVisualProfile.ResolveEndBleed(Name);
             double crossBleed = ShipSpriteVisualProfile.ResolveCrossAxisBleed(Name);
@@ -2861,7 +2910,8 @@ public class ShipSpriteVm : ObservableObject
         ShipAxis axis,
         bool isEnemy = false,
         bool isRevealed = true,
-        bool animateFromBoardEdgeOnReveal = false)
+        bool animateFromBoardEdgeOnReveal = false,
+        double cellSize = BoardViewModel.CellSize)
     {
         Name = name;
         ImageSource = imageSource;
@@ -2873,6 +2923,7 @@ public class ShipSpriteVm : ObservableObject
         IsEnemy = isEnemy;
         _isRevealed = isRevealed;
         AnimateFromBoardEdgeOnReveal = animateFromBoardEdgeOnReveal;
+        _cellSize = cellSize;
     }
 
     public bool TryConsumePlacementEntry(out Point entryOffset)
@@ -2883,7 +2934,7 @@ public class ShipSpriteVm : ObservableObject
 
         _hasConsumedPlacementEntry = true;
 
-        double cell = BoardViewModel.CellSize;
+        double cell = _cellSize;
         double boardPixels = BoardViewModel.Size * cell;
         if (Axis == ShipAxis.Vertical)
         {
@@ -2917,6 +2968,18 @@ public class ShipSpriteVm : ObservableObject
     {
         OnPropertyChanged(nameof(StrokeColor));
         OnPropertyChanged(nameof(BackgroundColor));
+    }
+
+    public void RefreshGeometry(double? cellSize = null)
+    {
+        if (cellSize.HasValue)
+            _cellSize = cellSize.Value;
+
+        OnPropertyChanged(nameof(Bounds));
+        OnPropertyChanged(nameof(ImageWidthRequest));
+        OnPropertyChanged(nameof(ImageHeightRequest));
+        OnPropertyChanged(nameof(ImageTranslationX));
+        OnPropertyChanged(nameof(ImageTranslationY));
     }
 
     private static Color ResolveThemeColor(string key, string fallbackHex)

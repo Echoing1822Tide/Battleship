@@ -6,7 +6,8 @@
     xmlns:behaviors="clr-namespace:BattleshipMaui.Behaviors"
     xmlns:controls="clr-namespace:BattleshipMaui.Controls"
     xmlns:vm="clr-namespace:BattleshipMaui.ViewModels"
-    BackgroundColor="{DynamicResource GameColorBackground}">
+    BackgroundColor="{DynamicResource GameColorBackground}"
+    Shell.NavBarIsVisible="False">
 
     <ContentPage.BindingContext>
         <vm:BoardViewModel />
@@ -14,6 +15,68 @@
 
     <Grid RowDefinitions="Auto,*" RowSpacing="0">
         <Border Grid.Row="0"
+                IsVisible="{Binding ShowCompactCommandHeader}"
+                Stroke="{DynamicResource GameColorBorder}"
+                StrokeThickness="0,0,0,1"
+                Padding="12,8">
+            <Border.Background>
+                <LinearGradientBrush EndPoint="1,1">
+                    <GradientStop Color="{DynamicResource GameColorHeaderStart}" Offset="0" />
+                    <GradientStop Color="{DynamicResource GameColorHeaderEnd}" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid ColumnDefinitions="1.1*,1.2*,Auto"
+                  ColumnSpacing="12">
+                <VerticalStackLayout Spacing="1">
+                    <Label Text="{Binding CompactHeaderTitle}"
+                           Style="{StaticResource GameSectionLabelStyle}"
+                           FontSize="24"
+                           TextColor="#E9F7FF" />
+                    <Label Text="{Binding CompactHeaderStatus}"
+                           Style="{StaticResource GameCaptionLabelStyle}"
+                           FontSize="12"
+                           LineBreakMode="TailTruncation"
+                           TextColor="#9BC4E7" />
+                </VerticalStackLayout>
+
+                <Label Grid.Column="1"
+                       Text="{Binding CurrentGameStatsLine}"
+                       Style="{StaticResource GameCaptionLabelStyle}"
+                       FontSize="13"
+                       VerticalTextAlignment="Center"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{DynamicResource GameColorAccent}" />
+
+                <HorizontalStackLayout Grid.Column="2"
+                                       Spacing="8"
+                                       VerticalOptions="Center">
+                    <Button Text="New Mission"
+                            Command="{Binding NewGameCommand}"
+                            Style="{StaticResource GamePrimaryButtonStyle}"
+                            HeightRequest="38"
+                            Padding="16,8" />
+                    <Button Text="Reset Stats"
+                            Command="{Binding ResetStatsCommand}"
+                            Style="{StaticResource GameSecondaryButtonStyle}"
+                            HeightRequest="38"
+                            Padding="16,8" />
+                    <Button Text="Disconnect"
+                            Command="{Binding DisconnectLanCommand}"
+                            IsVisible="{Binding IsLanConnected}"
+                            Style="{StaticResource GameSecondaryButtonStyle}"
+                            HeightRequest="38"
+                            Padding="16,8" />
+                    <Button Text="{Binding SettingsToggleText}"
+                            Command="{Binding ToggleSettingsPanelCommand}"
+                            Style="{StaticResource GameSecondaryButtonStyle}"
+                            HeightRequest="38"
+                            Padding="16,8" />
+                </HorizontalStackLayout>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="0"
+                IsVisible="{Binding ShowExpandedCommandHeader}"
                 Stroke="{DynamicResource GameColorBorder}"
                 StrokeThickness="0,0,0,1"
                 Padding="14,12">
@@ -225,10 +288,11 @@
         </Border>
 
         <Grid Grid.Row="1">
-            <Grid Padding="{StaticResource GamePagePadding}"
-                  RowDefinitions="Auto,Auto,Auto"
+            <Grid Padding="{Binding GameplayContentPadding}"
+                  RowDefinitions="Auto,Auto,*"
                   RowSpacing="8">
                     <Border Grid.Row="0"
+                    IsVisible="{Binding ShowDetailedBattleStatusCard}"
                     Style="{StaticResource GameCardBorderStyle}"
                     Padding="12,8">
                 <Grid ColumnDefinitions="1.3*,1.3*,1.4*" ColumnSpacing="10">
@@ -346,18 +410,18 @@
 
                     <Grid x:Name="CommandCenterBoardHost"
                   Grid.Row="2"
-                  ColumnDefinitions="*,*"
-                  ColumnSpacing="14"
-                  HorizontalOptions="Fill"
-                  VerticalOptions="Start">
+                  ColumnDefinitions="Auto,Auto"
+                  ColumnSpacing="18"
+                  HorizontalOptions="Center"
+                  VerticalOptions="FillAndExpand">
                 <VerticalStackLayout x:Name="EnemyBoardPage"
                                      Grid.Column="0"
                                      Spacing="6"
                                      HorizontalOptions="Center"
-                                     VerticalOptions="Start">
+                                     VerticalOptions="FillAndExpand">
                     <Label Text="Enemy Waters"
                            Style="{StaticResource GameSectionLabelStyle}"
-                           FontSize="36"
+                           FontSize="{Binding BoardTitleFontSize}"
                            Margin="0,2,0,0" />
 
                     <Border Style="{StaticResource GameCardBorderStyle}"
@@ -392,7 +456,7 @@
                                                HorizontalTextAlignment="Center"
                                                VerticalTextAlignment="Center"
                                                TextColor="{DynamicResource GameColorTextMuted}"
-                                               FontSize="12"
+                                               FontSize="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=BoardAxisFontSize}"
                                                FontAttributes="Bold" />
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
@@ -413,7 +477,7 @@
                                                HorizontalTextAlignment="Center"
                                                VerticalTextAlignment="Center"
                                                TextColor="{DynamicResource GameColorTextMuted}"
-                                               FontSize="12"
+                                               FontSize="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=BoardAxisFontSize}"
                                                FontAttributes="Bold" />
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
@@ -614,8 +678,8 @@
                                                     StrokeThickness="0.9"
                                                     StrokeShape="{DynamicResource GameBoardCellShape}"
                                                     BackgroundColor="#01000000"
-                                                    WidthRequest="44"
-                                                    HeightRequest="44"
+                                                    WidthRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
+                                                    HeightRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Enemy cell. Tap to fire.">
                                                 <Border.GestureRecognizers>
@@ -643,10 +707,10 @@
                                      Grid.Column="1"
                                      Spacing="6"
                                      HorizontalOptions="Center"
-                                     VerticalOptions="Start">
+                                     VerticalOptions="FillAndExpand">
                     <Label Text="Your Fleet"
                            Style="{StaticResource GameSectionLabelStyle}"
-                           FontSize="36"
+                           FontSize="{Binding BoardTitleFontSize}"
                            Margin="0,2,0,0" />
 
                     <Border Style="{StaticResource GameCardBorderStyle}"
@@ -681,7 +745,7 @@
                                                HorizontalTextAlignment="Center"
                                                VerticalTextAlignment="Center"
                                                TextColor="{DynamicResource GameColorTextMuted}"
-                                               FontSize="12"
+                                               FontSize="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=BoardAxisFontSize}"
                                                FontAttributes="Bold" />
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
@@ -702,7 +766,7 @@
                                                HorizontalTextAlignment="Center"
                                                VerticalTextAlignment="Center"
                                                TextColor="{DynamicResource GameColorTextMuted}"
-                                               FontSize="12"
+                                               FontSize="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=BoardAxisFontSize}"
                                                FontAttributes="Bold" />
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
@@ -933,8 +997,8 @@
                                                     StrokeThickness="0.9"
                                                     StrokeShape="{DynamicResource GameBoardCellShape}"
                                                     BackgroundColor="#01000000"
-                                                    WidthRequest="44"
-                                                    HeightRequest="44"
+                                                    WidthRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
+                                                    HeightRequest="{Binding Source={RelativeSource AncestorType={x:Type vm:BoardViewModel}}, Path=CellPixelSize}"
                                                     SemanticProperties.Description="{Binding AccessibilityText}"
                                                     SemanticProperties.Hint="Your fleet cell. Left-click to place the selected ship. Right-click to rotate orientation.">
                                                 <Border.GestureRecognizers>
@@ -966,47 +1030,172 @@
 
             <Grid x:Name="TurnTransitionScrim"
                   IsVisible="{Binding IsTurnTransitionActive}"
-                  BackgroundColor="#55111d2b"
+                  BackgroundColor="#66071221"
                   ZIndex="24"
                   InputTransparent="False">
-                <Border x:Name="TurnTransitionCard"
-                        Style="{StaticResource GameCardBorderStyle}"
-                        WidthRequest="520"
-                        MaximumWidthRequest="520"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        BackgroundColor="{DynamicResource GameColorTransitionCard}"
-                        Padding="16,14">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ActivityIndicator IsRunning="{Binding IsTurnTransitionActive}"
-                                           IsVisible="{Binding IsTurnTransitionActive}"
-                                           WidthRequest="30"
-                                           HeightRequest="30"
-                                           VerticalOptions="Center"
-                                           Color="{Binding TurnTransitionSpinnerColor}" />
-                        <VerticalStackLayout Grid.Column="1"
-                                             Spacing="2"
-                                             VerticalOptions="Center">
-                            <HorizontalStackLayout Spacing="4">
+                <Grid WidthRequest="760"
+                      MaximumWidthRequest="760"
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center"
+                      RowDefinitions="Auto,Auto"
+                      RowSpacing="18">
+                    <Grid HeightRequest="320"
+                          WidthRequest="320"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center">
+                        <Border x:Name="TurnTransitionHalo"
+                                WidthRequest="320"
+                                HeightRequest="320"
+                                StrokeThickness="0"
+                                BackgroundColor="#05121f30"
+                                StrokeShape="RoundRectangle 180" />
+
+                        <Border x:Name="TurnTransitionPulseRing"
+                                WidthRequest="284"
+                                HeightRequest="284"
+                                Stroke="{Binding TurnTransitionSpinnerColor}"
+                                StrokeThickness="2.2"
+                                StrokeShape="RoundRectangle 160"
+                                BackgroundColor="#03101820"
+                                Opacity="0.28"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+
+                        <Grid x:Name="TurnTransitionSweepHost"
+                              WidthRequest="304"
+                              HeightRequest="304"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center"
+                              InputTransparent="True">
+                            <BoxView x:Name="TurnTransitionSweep"
+                                     WidthRequest="142"
+                                     HeightRequest="3"
+                                     CornerRadius="2"
+                                     HorizontalOptions="End"
+                                     VerticalOptions="Center"
+                                     Color="{Binding TurnTransitionSpinnerColor}"
+                                     Opacity="0.65" />
+                        </Grid>
+
+                        <Border x:Name="TurnTransitionReticle"
+                                WidthRequest="248"
+                                HeightRequest="248"
+                                Stroke="{Binding TurnTransitionSpinnerColor}"
+                                StrokeThickness="3"
+                                StrokeShape="RoundRectangle 140"
+                                BackgroundColor="#050d1826"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+
+                        <Border x:Name="TurnTransitionInnerReticle"
+                                WidthRequest="188"
+                                HeightRequest="188"
+                                Stroke="#40FFFFFF"
+                                StrokeThickness="1.4"
+                                StrokeShape="RoundRectangle 120"
+                                BackgroundColor="#02131f2d"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+
+                        <BoxView WidthRequest="260"
+                                 HeightRequest="2"
+                                 HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 Color="{Binding TurnTransitionSpinnerColor}"
+                                 Opacity="0.78" />
+
+                        <BoxView WidthRequest="2"
+                                 HeightRequest="260"
+                                 HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 Color="{Binding TurnTransitionSpinnerColor}"
+                                 Opacity="0.78" />
+
+                        <Border x:Name="TurnTransitionCoordinateChip"
+                                WidthRequest="172"
+                                HeightRequest="132"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                Stroke="{Binding TurnTransitionSpinnerColor}"
+                                StrokeThickness="1.6"
+                                StrokeShape="RoundRectangle 26"
+                                BackgroundColor="#C30C1624"
+                                Padding="12,10">
+                            <VerticalStackLayout Spacing="0"
+                                                 HorizontalOptions="Center"
+                                                 VerticalOptions="Center">
+                                <Label Text="TARGET"
+                                       Style="{StaticResource GameCaptionLabelStyle}"
+                                       FontSize="11"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{DynamicResource GameColorTextMuted}" />
+                                <Label Text="{Binding TurnTransitionCoordinate}"
+                                       Style="{StaticResource GameSectionLabelStyle}"
+                                       FontSize="54"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{Binding TurnTransitionSpinnerColor}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border x:Name="TurnTransitionCard"
+                            Grid.Row="1"
+                            Style="{StaticResource GameCardBorderStyle}"
+                            HorizontalOptions="Center"
+                            BackgroundColor="{DynamicResource GameColorTransitionCard}"
+                            Padding="18,16">
+                        <VerticalStackLayout Spacing="4"
+                                             HorizontalOptions="Center">
+                            <HorizontalStackLayout Spacing="4"
+                                                   HorizontalOptions="Center">
                                 <Label Text="{Binding TurnTransitionTitle}"
                                        Style="{StaticResource GameSectionLabelStyle}"
-                                       FontSize="21"
+                                       FontSize="23"
                                        VerticalTextAlignment="Center"
+                                       HorizontalTextAlignment="Center"
                                        TextColor="{DynamicResource GameColorAccent}" />
                                 <Label Text="{Binding ThinkingDots}"
                                        IsVisible="{Binding IsThinkingPromptActive}"
                                        Style="{StaticResource GameSectionLabelStyle}"
-                                       FontSize="21"
+                                       FontSize="23"
                                        VerticalTextAlignment="Center"
                                        TextColor="{Binding TurnTransitionSpinnerColor}" />
                             </HorizontalStackLayout>
                             <Label Text="{Binding TurnTransitionMessage}"
                                    Style="{StaticResource GameBodyLabelStyle}"
                                    FontSize="16"
-                                   VerticalTextAlignment="Center"
+                                   HorizontalTextAlignment="Center"
                                    TextColor="{DynamicResource GameColorTextSecondary}" />
                         </VerticalStackLayout>
-                    </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="IntelBubbleScrim"
+                  IsVisible="{Binding IsIntelBubbleVisible}"
+                  ZIndex="25"
+                  InputTransparent="True">
+                <Border x:Name="IntelBubbleCard"
+                        Style="{StaticResource GameCardBorderStyle}"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Start"
+                        Margin="0,18,0,0"
+                        Padding="14,10"
+                        BackgroundColor="#D40E1826"
+                        Stroke="{DynamicResource GameColorAccent}">
+                    <VerticalStackLayout Spacing="2"
+                                         HorizontalOptions="Center">
+                        <Label Text="{Binding IntelBubbleTitle}"
+                               Style="{StaticResource GameCaptionLabelStyle}"
+                               FontSize="12"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource GameColorWarning}" />
+                        <Label Text="{Binding IntelBubbleMessage}"
+                               Style="{StaticResource GameBodyLabelStyle}"
+                               FontSize="15"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{DynamicResource GameColorTextPrimary}" />
+                    </VerticalStackLayout>
                 </Border>
             </Grid>
 
@@ -1047,7 +1236,7 @@
                                 BackgroundColor="{DynamicResource GameColorPanel}"
                                 Padding="12,10">
                             <Grid ColumnDefinitions="*,*"
-                                  RowDefinitions="Auto,Auto,Auto,Auto"
+                                  RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                                   ColumnSpacing="12"
                                   RowSpacing="10">
                                 <VerticalStackLayout Spacing="4"
@@ -1126,6 +1315,24 @@
                                            Text="{Binding SoundFxVolumePercent}"
                                            Style="{StaticResource GameCaptionLabelStyle}"
                                            VerticalTextAlignment="Center" />
+                                </Grid>
+
+                                <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Label Text="Commander Voice"
+                                           Style="{StaticResource GameCaptionLabelStyle}"
+                                           VerticalTextAlignment="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding CommanderVoiceEnabled}"
+                                            HorizontalOptions="End" />
+                                </Grid>
+
+                                <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="8" Grid.ColumnSpan="2">
+                                    <Label Text="Turn Cinematic Overlay"
+                                           Style="{StaticResource GameCaptionLabelStyle}"
+                                           VerticalTextAlignment="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding TurnCinematicsEnabled}"
+                                            HorizontalOptions="End" />
                                 </Grid>
                             </Grid>
                         </Border>

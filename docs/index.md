@@ -4,12 +4,17 @@ Desktop Battleship game built with .NET MAUI.
 
 ## Current Public Releases
 
-- `BattleshipMaui v1.7.1`
+- `BattleshipMaui v1.8.0`
   - Dedicated single-player Windows build against the onboard CPU
-- `LANBattleshipMAUI v2.0.0`
+- `LANBattleshipMAUI v2.1.0`
   - Dedicated same-network multiplayer Windows build for 2 PCs on the same LAN
 
 Both releases are in **Public Release** status and ship as self-contained Windows `win-x64` zip downloads.
+
+## Current Highlights
+
+- `BattleshipMaui v1.8.0` expands combat boards, trims gameplay chrome, enables cinematic strike transitions by default, and adds commander voice hit/miss callouts.
+- `LANBattleshipMAUI v2.1.0` expands combat boards, fixes crowded LAN placement visibility, keeps rapid-fire play as the default, and adds optional strike cinematics plus hit intel bubbles.
 
 ## Quick Start
 
@@ -37,8 +42,8 @@ Publish a single flavor:
 
 Launch:
 
-- `artifacts\release\BattleshipMaui-v1.7.1-win-x64\BattleshipMaui.exe`
-- `artifacts\release\LANBattleshipMAUI-v2.0.0-win-x64\LANBattleshipMAUI.exe`
+- `artifacts\release\BattleshipMaui-v1.8.0-win-x64\BattleshipMaui.exe`
+- `artifacts\release\LANBattleshipMAUI-v2.1.0-win-x64\LANBattleshipMAUI.exe`
 
 ## GitHub Releases
 
