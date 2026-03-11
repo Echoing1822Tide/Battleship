@@ -1019,117 +1019,65 @@
                 </Grid>
 
             <Grid x:Name="TurnTransitionScrim"
+                  Grid.RowSpan="2"
                   IsVisible="{Binding IsTurnTransitionActive}"
                   BackgroundColor="#66071221"
                   ZIndex="24"
                   InputTransparent="False">
-                <Grid WidthRequest="760"
-                      MaximumWidthRequest="760"
-                      HorizontalOptions="Center"
-                      VerticalOptions="Center"
-                      RowDefinitions="Auto,Auto"
-                      RowSpacing="18">
-                    <Grid HeightRequest="320"
-                          WidthRequest="320"
+                <VerticalStackLayout WidthRequest="560"
+                                     MaximumWidthRequest="560"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="18">
+                    <Grid HeightRequest="124"
+                          WidthRequest="124"
                           HorizontalOptions="Center"
                           VerticalOptions="Center">
                         <Border x:Name="TurnTransitionHalo"
-                                WidthRequest="320"
-                                HeightRequest="320"
+                                WidthRequest="124"
+                                HeightRequest="124"
                                 StrokeThickness="0"
-                                BackgroundColor="#05121f30"
-                                StrokeShape="RoundRectangle 180" />
+                                BackgroundColor="#07162128"
+                                StrokeShape="RoundRectangle 62" />
 
                         <Border x:Name="TurnTransitionPulseRing"
-                                WidthRequest="284"
-                                HeightRequest="284"
+                                WidthRequest="96"
+                                HeightRequest="96"
                                 Stroke="{Binding TurnTransitionSpinnerColor}"
                                 StrokeThickness="2.2"
-                                StrokeShape="RoundRectangle 160"
+                                StrokeShape="RoundRectangle 48"
                                 BackgroundColor="#03101820"
-                                Opacity="0.28"
+                                Opacity="0.32"
                                 HorizontalOptions="Center"
                                 VerticalOptions="Center" />
 
                         <Grid x:Name="TurnTransitionSweepHost"
-                              WidthRequest="304"
-                              HeightRequest="304"
+                              WidthRequest="90"
+                              HeightRequest="90"
                               HorizontalOptions="Center"
                               VerticalOptions="Center"
                               InputTransparent="True">
                             <BoxView x:Name="TurnTransitionSweep"
-                                     WidthRequest="142"
+                                     WidthRequest="42"
                                      HeightRequest="3"
                                      CornerRadius="2"
                                      HorizontalOptions="End"
                                      VerticalOptions="Center"
                                      Color="{Binding TurnTransitionSpinnerColor}"
-                                     Opacity="0.65" />
+                                     Opacity="0.78" />
                         </Grid>
 
-                        <Border x:Name="TurnTransitionReticle"
-                                WidthRequest="248"
-                                HeightRequest="248"
+                        <Border WidthRequest="50"
+                                HeightRequest="50"
                                 Stroke="{Binding TurnTransitionSpinnerColor}"
-                                StrokeThickness="3"
-                                StrokeShape="RoundRectangle 140"
-                                BackgroundColor="#050d1826"
+                                StrokeThickness="1.2"
+                                StrokeShape="RoundRectangle 25"
+                                BackgroundColor="#150C1623"
                                 HorizontalOptions="Center"
                                 VerticalOptions="Center" />
-
-                        <Border x:Name="TurnTransitionInnerReticle"
-                                WidthRequest="188"
-                                HeightRequest="188"
-                                Stroke="#40FFFFFF"
-                                StrokeThickness="1.4"
-                                StrokeShape="RoundRectangle 120"
-                                BackgroundColor="#02131f2d"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center" />
-
-                        <BoxView WidthRequest="260"
-                                 HeightRequest="2"
-                                 HorizontalOptions="Center"
-                                 VerticalOptions="Center"
-                                 Color="{Binding TurnTransitionSpinnerColor}"
-                                 Opacity="0.78" />
-
-                        <BoxView WidthRequest="2"
-                                 HeightRequest="260"
-                                 HorizontalOptions="Center"
-                                 VerticalOptions="Center"
-                                 Color="{Binding TurnTransitionSpinnerColor}"
-                                 Opacity="0.78" />
-
-                        <Border x:Name="TurnTransitionCoordinateChip"
-                                WidthRequest="172"
-                                HeightRequest="132"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center"
-                                Stroke="{Binding TurnTransitionSpinnerColor}"
-                                StrokeThickness="1.6"
-                                StrokeShape="RoundRectangle 26"
-                                BackgroundColor="#C30C1624"
-                                Padding="12,10">
-                            <VerticalStackLayout Spacing="0"
-                                                 HorizontalOptions="Center"
-                                                 VerticalOptions="Center">
-                                <Label Text="TARGET"
-                                       Style="{StaticResource GameCaptionLabelStyle}"
-                                       FontSize="11"
-                                       HorizontalTextAlignment="Center"
-                                       TextColor="{DynamicResource GameColorTextMuted}" />
-                                <Label Text="{Binding TurnTransitionCoordinate}"
-                                       Style="{StaticResource GameSectionLabelStyle}"
-                                       FontSize="54"
-                                       HorizontalTextAlignment="Center"
-                                       TextColor="{Binding TurnTransitionSpinnerColor}" />
-                            </VerticalStackLayout>
-                        </Border>
                     </Grid>
 
                     <Border x:Name="TurnTransitionCard"
-                            Grid.Row="1"
                             Style="{StaticResource GameCardBorderStyle}"
                             HorizontalOptions="Center"
                             BackgroundColor="{DynamicResource GameColorTransitionCard}"
@@ -1158,10 +1106,11 @@
                                    TextColor="{DynamicResource GameColorTextSecondary}" />
                         </VerticalStackLayout>
                     </Border>
-                </Grid>
+                </VerticalStackLayout>
             </Grid>
 
             <Grid x:Name="IntelBubbleScrim"
+                  Grid.RowSpan="2"
                   IsVisible="{Binding IsIntelBubbleVisible}"
                   ZIndex="25"
                   InputTransparent="True">
@@ -1190,21 +1139,22 @@
             </Grid>
 
             <Grid x:Name="StartupSequenceScrim"
+                  Grid.RowSpan="2"
                   IsVisible="False"
-                  BackgroundColor="#01050A"
+                  BackgroundColor="#000000"
                   ZIndex="28"
                   InputTransparent="False">
                 <Grid>
-                    <BoxView Color="#020913" />
+                    <BoxView Color="#000000" />
                     <Border Margin="0"
                             StrokeThickness="0"
-                            BackgroundColor="#FF051323">
+                            BackgroundColor="#FF000000">
                         <Border.Background>
                             <RadialGradientBrush Center="0.5,0.42"
                                                  Radius="0.95">
-                                <GradientStop Color="#FF0C233B" Offset="0.0" />
-                                <GradientStop Color="#FF06182B" Offset="0.45" />
-                                <GradientStop Color="#FF02070F" Offset="1.0" />
+                                <GradientStop Color="#FF04111A" Offset="0.0" />
+                                <GradientStop Color="#FF01060C" Offset="0.42" />
+                                <GradientStop Color="#FF000000" Offset="1.0" />
                             </RadialGradientBrush>
                         </Border.Background>
                     </Border>
@@ -1276,8 +1226,8 @@
                                             StrokeThickness="1.6"
                                             StrokeShape="RoundRectangle 42"
                                             Padding="28"
-                                            BackgroundColor="#180B1B2A">
-                                        <Image Source="vscode_logo.svg"
+                                            BackgroundColor="#12040C12">
+                                        <Image Source="vs_code.png"
                                                Aspect="AspectFit" />
                                     </Border>
                                     <Label x:Name="StartupVsCodeLabel"
@@ -1349,6 +1299,7 @@
             </Grid>
 
             <Grid x:Name="SettingsScrim"
+                  Grid.RowSpan="2"
                   IsVisible="{Binding IsSettingsOpen}"
                   BackgroundColor="#360b1320"
                   ZIndex="26"
@@ -1560,6 +1511,7 @@
             </Grid>
 
             <Grid x:Name="OverlayScrim"
+                  Grid.RowSpan="2"
                   IsVisible="{Binding IsOverlayVisible}"
                   BackgroundColor="#A0000000"
                   ZIndex="30"

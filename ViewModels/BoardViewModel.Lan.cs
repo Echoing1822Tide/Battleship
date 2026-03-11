@@ -572,7 +572,7 @@ public partial class BoardViewModel
         }
 
         OnPropertyChanged(nameof(ScoreLine));
-        EmitShotFeedback(shot);
+        EmitEnemyShotFeedback(shot);
         EnemyLastShotMessage = $"Enemy last shot: {coordinate} - {shot.Message}";
 
         bool defeated = _playerBoard.AllShipsSunk;

@@ -57,7 +57,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
     {
         if (soundEnabled)
         {
-            TryPlaySound(cue, shipName, soundFxVolume);
+            TryPlaySound(cue, shipName, soundFxVolume, commanderVoiceEnabled);
             if (commanderVoiceEnabled)
                 _ = TrySpeakCommanderCueAsync(cue, soundFxVolume);
         }
@@ -66,7 +66,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
             TryPlayHaptics(cue, reduceMotion);
     }
 
-    private static void TryPlaySound(GameFeedbackCue cue, string? shipName, double soundFxVolume)
+    private static void TryPlaySound(GameFeedbackCue cue, string? shipName, double soundFxVolume, bool commanderVoiceEnabled)
     {
         double fxVolume = Math.Clamp(soundFxVolume, 0, 1);
         if (fxVolume <= 0)
@@ -75,7 +75,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         string? effectTrack = cue switch
         {
             GameFeedbackCue.Miss => SelectMissExplosionTrack(),
-            GameFeedbackCue.Hit or GameFeedbackCue.Sunk => ResolveShipHitTrack(shipName),
+            GameFeedbackCue.Hit or GameFeedbackCue.Sunk or GameFeedbackCue.PlayerSunk => ResolveShipHitTrack(shipName),
             _ => null
         };
 
@@ -85,6 +85,9 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
             if (TryPlayAudioTrack(effectTrack, trackVolume))
                 return;
         }
+
+        if (commanderVoiceEnabled && HasDedicatedCommanderCallout(cue))
+            return;
 
         TryPlayToneFallback(cue);
     }
@@ -141,6 +144,11 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         {
             var sequence = cue switch
             {
+                GameFeedbackCue.TargetLocked => new[]
+                {
+                    new ToneStep(720, 54, 8),
+                    new ToneStep(880, 68)
+                },
                 GameFeedbackCue.Miss => new[]
                 {
                     new ToneStep(520, 24, 6),
@@ -157,6 +165,12 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
                     new ToneStep(860, 46, 12),
                     new ToneStep(990, 56, 8),
                     new ToneStep(1160, 72)
+                },
+                GameFeedbackCue.PlayerSunk => new[]
+                {
+                    new ToneStep(610, 54, 10),
+                    new ToneStep(520, 58, 8),
+                    new ToneStep(430, 74)
                 },
                 GameFeedbackCue.Win => new[]
                 {
@@ -276,13 +290,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         if (TryPlayCommanderVoiceClip(cue, soundFxVolume))
             return;
 
-        string? phrase = cue switch
-        {
-            GameFeedbackCue.Hit => "Direct hit!",
-            GameFeedbackCue.Miss => "Target missed.",
-            GameFeedbackCue.Sunk => "Enemy vessel destroyed.",
-            _ => null
-        };
+        string? phrase = ResolveCommanderFallbackPhrase(cue);
 
         if (string.IsNullOrWhiteSpace(phrase))
             return;
@@ -327,38 +335,116 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
 
     private static bool TryPlayCommanderVoiceClip(GameFeedbackCue cue, double soundFxVolume)
     {
-        string? clip = cue switch
-        {
-            GameFeedbackCue.Hit => AppAudio.CommanderTargetHit,
-            GameFeedbackCue.Miss => AppAudio.CommanderTargetMiss,
-            GameFeedbackCue.Sunk => AppAudio.CommanderTargetSunk,
-            _ => null
-        };
-
-        if (string.IsNullOrWhiteSpace(clip))
+        string[]? clips = ResolveCommanderVoiceClips(cue);
+        if (clips is null || clips.Length == 0)
             return false;
 
         try
         {
-            var players = CommanderVoicePlayers.Value;
-            if (players is null || !players.TryGetValue(clip, out var player))
-                return false;
-
-            lock (EffectsLock)
-            {
-                player.Volume = Math.Clamp(Math.Max(0.24, soundFxVolume), 0, 1);
-                player.Pause();
-                if (player.PlaybackSession is not null)
-                    player.PlaybackSession.Position = TimeSpan.Zero;
-                player.Play();
-            }
-
+            double volume = Math.Clamp(Math.Max(0.24, soundFxVolume), 0, 1);
+            _ = PlayCommanderVoiceSequenceAsync(clips, volume);
             return true;
         }
         catch
         {
             return false;
         }
+    }
+
+    private static bool HasDedicatedCommanderCallout(GameFeedbackCue cue)
+    {
+        return ResolveCommanderVoiceClips(cue)?.Length > 0
+            || !string.IsNullOrWhiteSpace(ResolveCommanderFallbackPhrase(cue));
+    }
+
+    private static string? ResolveCommanderFallbackPhrase(GameFeedbackCue cue)
+    {
+        return cue switch
+        {
+            GameFeedbackCue.TargetLocked => "Target locked.",
+            GameFeedbackCue.Hit => "Direct hit!",
+            GameFeedbackCue.Miss => "Target missed.",
+            GameFeedbackCue.Sunk => "Enemy vessel destroyed.",
+            GameFeedbackCue.PlayerSunk => "Your vessel has been destroyed.",
+            GameFeedbackCue.Win => "Victory secured.",
+            GameFeedbackCue.Loss => "Enemy won the engagement.",
+            GameFeedbackCue.Draw => "War over.",
+            _ => null
+        };
+    }
+
+    private static string[]? ResolveCommanderVoiceClips(GameFeedbackCue cue)
+    {
+        return cue switch
+        {
+            GameFeedbackCue.TargetLocked => new[] { AppAudio.TargetLocked },
+            GameFeedbackCue.Hit => new[] { AppAudio.CommanderTargetHit },
+            GameFeedbackCue.Miss => new[] { AppAudio.CommanderTargetMiss },
+            GameFeedbackCue.Sunk => new[] { AppAudio.CommanderTargetSunk },
+            GameFeedbackCue.PlayerSunk => new[] { AppAudio.CommanderPlayerSunk },
+            GameFeedbackCue.Win => new[] { AppAudio.VictorySting, AppAudio.VictoryCall },
+            GameFeedbackCue.Loss => new[] { AppAudio.LossSting, AppAudio.EnemyWonCall },
+            GameFeedbackCue.Draw => new[] { AppAudio.WarOverCall },
+            _ => null
+        };
+    }
+
+    private static async Task PlayCommanderVoiceSequenceAsync(IReadOnlyList<string> clips, double volume)
+    {
+        bool lockHeld = false;
+
+        try
+        {
+            await CommanderVoiceLock.WaitAsync().ConfigureAwait(false);
+            lockHeld = true;
+
+            var players = CommanderVoicePlayers.Value;
+            if (players is null)
+                return;
+
+            foreach (string clip in clips)
+            {
+                if (!players.TryGetValue(clip, out var player))
+                    continue;
+
+                lock (EffectsLock)
+                {
+                    player.Volume = volume;
+                    player.Pause();
+                    if (player.PlaybackSession is not null)
+                        player.PlaybackSession.Position = TimeSpan.Zero;
+                    player.Play();
+                }
+
+                await Task.Delay(ResolveCommanderClipDuration(clip)).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            if (lockHeld)
+                CommanderVoiceLock.Release();
+        }
+    }
+
+    private static TimeSpan ResolveCommanderClipDuration(string clip)
+    {
+        return clip switch
+        {
+            AppAudio.TargetLocked => TimeSpan.FromMilliseconds(1600),
+            AppAudio.CommanderTargetHit => TimeSpan.FromMilliseconds(1200),
+            AppAudio.CommanderTargetMiss => TimeSpan.FromMilliseconds(1700),
+            AppAudio.CommanderTargetSunk => TimeSpan.FromMilliseconds(1800),
+            AppAudio.CommanderPlayerSunk => TimeSpan.FromMilliseconds(1800),
+            AppAudio.VictorySting => TimeSpan.FromMilliseconds(1100),
+            AppAudio.VictoryCall => TimeSpan.FromMilliseconds(2100),
+            AppAudio.LossSting => TimeSpan.FromMilliseconds(1300),
+            AppAudio.EnemyWonCall => TimeSpan.FromMilliseconds(2500),
+            AppAudio.WarOverCall => TimeSpan.FromMilliseconds(1600),
+            _ => TimeSpan.FromMilliseconds(1500)
+        };
     }
 
     private static SpeechSynthesizer CreateCommanderVoiceSynthesizer()
@@ -436,9 +522,16 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         {
             string[] clips =
             {
+                AppAudio.TargetLocked,
                 AppAudio.CommanderTargetHit,
                 AppAudio.CommanderTargetMiss,
-                AppAudio.CommanderTargetSunk
+                AppAudio.CommanderTargetSunk,
+                AppAudio.CommanderPlayerSunk,
+                AppAudio.VictorySting,
+                AppAudio.VictoryCall,
+                AppAudio.LossSting,
+                AppAudio.EnemyWonCall,
+                AppAudio.WarOverCall
             };
 
             var players = new Dictionary<string, MediaPlayer>(StringComparer.OrdinalIgnoreCase);
@@ -492,7 +585,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
                 return;
             }
 
-            if (cue is GameFeedbackCue.Sunk)
+            if (cue is GameFeedbackCue.Sunk or GameFeedbackCue.PlayerSunk)
             {
                 Vibration.Default.Vibrate(TimeSpan.FromMilliseconds(72));
                 HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);

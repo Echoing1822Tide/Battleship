@@ -241,7 +241,7 @@ public class BoardViewModelTests
     }
 
     [Fact]
-    public async Task EmitFeedback_HitCueTemporarilyDucksMusic_ForCommanderVoice()
+    public async Task EmitFeedback_HitCueTemporarilyDucksMusic_ForAudioPlayback()
     {
         var musicService = new RecordingBackgroundMusicService();
         var vm = new BoardViewModel(
@@ -273,9 +273,9 @@ public class BoardViewModelTests
 
         await Task.Delay(200);
 
-        Assert.Contains(musicService.Calls, call => call.Enabled && Math.Abs(call.Volume - 0.05) < 0.0001);
+        Assert.Contains(musicService.Calls, call => call.Enabled && Math.Abs(call.Volume - 0.02) < 0.0001);
 
-        await Task.Delay(1600);
+        await Task.Delay(2100);
 
         Assert.Contains(musicService.Calls, call => call.Enabled && Math.Abs(call.Volume - 0.30) < 0.0001);
         Assert.Equal(0.30, musicService.LastVolume, 3);

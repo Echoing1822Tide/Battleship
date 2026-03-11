@@ -22,6 +22,7 @@ public partial class BoardViewModel : ObservableObject
     private readonly List<PlayerShotRecord> _currentGameShotHistory = new();
     private BoardCellVm? _placementPreviewAnchorCell;
     private BoardCellVm? _enemyHoverTargetCell;
+    private BoardCellVm? _enemyThinkingTargetCell;
     private bool _hasShownWelcomeOverlayThisSession;
     private bool _musicPlaybackUnlocked;
 
@@ -103,7 +104,8 @@ public partial class BoardViewModel : ObservableObject
     public const double MissPegSize = 16;
     public const int PlayerShotRevealDelayMilliseconds = 3000;
     private const int PlayerTargetLockDelayMilliseconds = 420;
-    private const double CommanderVoiceDuckVolume = 0.05;
+    private const int EnemyTargetLockDelayMilliseconds = 1100;
+    private const double AudioDuckVolume = 0.02;
 
     private static readonly ShipTemplate[] FleetTemplates =
     {
@@ -1257,15 +1259,11 @@ public partial class BoardViewModel : ObservableObject
     private async Task PauseForDramaAsync(
         int milliseconds,
         string transitionMessage,
-        bool showThinkingPrelude = false,
         bool showTransitionCard = true,
         string? transitionTitle = null,
         string? targetCoordinate = null,
         Color? accentColor = null)
     {
-        if (showThinkingPrelude && ShouldUseCinematicTurnPacing)
-            await ShowThinkingPreludeAsync();
-
         if (showTransitionCard)
         {
             ConfigureTurnTransition(
@@ -1291,14 +1289,14 @@ public partial class BoardViewModel : ObservableObject
         await Task.Delay(ScalePause(milliseconds, jitter));
     }
 
-    private async Task ShowThinkingPreludeAsync()
+    private async Task ShowThinkingPreludeAsync(BoardCoordinate plannedTarget)
     {
         if (!ShouldUseCinematicTurnPacing)
             return;
 
         IsTurnTransitionActive = true;
         ConfigureTurnTransition(
-            "Counterbattery Scan",
+            "Thinking",
             "Enemy command is evaluating tactical options",
             coordinate: "--",
             accentColor: ResolveThemeColor("GameColorAccent", "#35F4FF"),
@@ -1318,9 +1316,10 @@ public partial class BoardViewModel : ObservableObject
             "Solution locked. Executing strike sequence"
         };
 
-        int totalDuration = _random.Next(2000, 7001);
+        int totalDuration = _random.Next(2000, 4001);
         int remaining = totalDuration;
         int dotTick = 0;
+        ClearEnemyThinkingTarget();
 
         for (int step = 0; step < steps.Length; step++)
         {
@@ -1336,6 +1335,7 @@ public partial class BoardViewModel : ObservableObject
             while (elapsed < stepDuration)
             {
                 ThinkingDots = new string('.', (dotTick % 3) + 1);
+                MoveEnemyThinkingTarget(plannedTarget, snapToPlannedTarget: step == steps.Length - 1 && stepDuration - elapsed <= 260);
                 dotTick++;
 
                 int slice = Math.Min(260, stepDuration - elapsed);
@@ -1349,6 +1349,68 @@ public partial class BoardViewModel : ObservableObject
         IsThinkingPromptActive = false;
         ThinkingDots = string.Empty;
         TurnTransitionTitle = "Command Update";
+    }
+
+    private void MoveEnemyThinkingTarget(BoardCoordinate plannedTarget, bool snapToPlannedTarget)
+    {
+        if (_playerBoard is null || PlayerCells.Count == 0)
+            return;
+
+        BoardCellVm? nextCell;
+        if (snapToPlannedTarget)
+        {
+            int plannedIndex = plannedTarget.Row * Size + plannedTarget.Col;
+            nextCell = plannedIndex >= 0 && plannedIndex < PlayerCells.Count
+                ? PlayerCells[plannedIndex]
+                : null;
+        }
+        else
+        {
+            nextCell = SelectNextEnemyThinkingTargetCell();
+        }
+
+        if (ReferenceEquals(nextCell, _enemyThinkingTargetCell))
+            return;
+
+        if (_enemyThinkingTargetCell is not null)
+            _enemyThinkingTargetCell.SetTargetLocked(false);
+
+        _enemyThinkingTargetCell = nextCell;
+        _enemyThinkingTargetCell?.SetTargetLocked(true);
+    }
+
+    private BoardCellVm? SelectNextEnemyThinkingTargetCell()
+    {
+        var candidates = PlayerCells
+            .Where(cell => cell.MarkerState == ShotMarkerState.None)
+            .ToArray();
+
+        if (candidates.Length == 0)
+            return null;
+
+        if (_enemyThinkingTargetCell is null)
+            return candidates[_random.Next(candidates.Length)];
+
+        var nearby = candidates
+            .Where(cell =>
+            {
+                int rowDelta = Math.Abs(cell.Row - _enemyThinkingTargetCell.Row);
+                int colDelta = Math.Abs(cell.Col - _enemyThinkingTargetCell.Col);
+                return rowDelta <= 2 && colDelta <= 2 && (rowDelta > 0 || colDelta > 0);
+            })
+            .ToArray();
+
+        var pool = nearby.Length > 0 ? nearby : candidates;
+        return pool[_random.Next(pool.Length)];
+    }
+
+    private void ClearEnemyThinkingTarget()
+    {
+        if (_enemyThinkingTargetCell is null)
+            return;
+
+        _enemyThinkingTargetCell.SetTargetLocked(false);
+        _enemyThinkingTargetCell = null;
     }
 
     private void ClearTurnTransition()
@@ -1411,21 +1473,21 @@ public partial class BoardViewModel : ObservableObject
 
     private void EmitFeedback(GameFeedbackCue cue, string? shipName = null)
     {
-        DuckMusicForCommanderVoiceIfNeeded(cue);
+        DuckMusicForAudioCueIfNeeded(cue);
         _feedbackService.Play(cue, SoundEnabled, SoundFxVolume, HapticsEnabled, ReduceMotionMode, CommanderVoiceEnabled, shipName);
     }
 
-    private void DuckMusicForCommanderVoiceIfNeeded(GameFeedbackCue cue)
+    private void DuckMusicForAudioCueIfNeeded(GameFeedbackCue cue)
     {
-        if (!SoundEnabled || !CommanderVoiceEnabled || !MusicEnabled || !_musicPlaybackUnlocked)
+        if (!SoundEnabled || !MusicEnabled || !_musicPlaybackUnlocked)
             return;
 
-        TimeSpan duckDuration = ResolveCommanderVoiceDuckDuration(cue);
+        TimeSpan duckDuration = ResolveAudioDuckDuration(cue);
         if (duckDuration <= TimeSpan.Zero)
             return;
 
         double restoreVolume = Math.Clamp(MusicVolume, 0, 1);
-        double duckVolume = Math.Min(CommanderVoiceDuckVolume, restoreVolume);
+        double duckVolume = Math.Min(AudioDuckVolume, restoreVolume);
         if (duckVolume >= restoreVolume - 0.0001)
             return;
 
@@ -1436,21 +1498,29 @@ public partial class BoardViewModel : ObservableObject
         }
 
         int currentSequence = _commanderVoiceDuckSequence;
-        _ = RestoreMusicAfterCommanderVoiceAsync(currentSequence, duckDuration);
+        _ = RestoreMusicAfterDuckedAudioAsync(currentSequence, duckDuration);
     }
 
-    private static TimeSpan ResolveCommanderVoiceDuckDuration(GameFeedbackCue cue)
+    private static TimeSpan ResolveAudioDuckDuration(GameFeedbackCue cue)
     {
         return cue switch
         {
-            GameFeedbackCue.Hit => TimeSpan.FromMilliseconds(1450),
-            GameFeedbackCue.Miss => TimeSpan.FromMilliseconds(1900),
-            GameFeedbackCue.Sunk => TimeSpan.FromMilliseconds(2200),
+            GameFeedbackCue.PlaceShip => TimeSpan.FromMilliseconds(650),
+            GameFeedbackCue.NewGame => TimeSpan.FromMilliseconds(900),
+            GameFeedbackCue.PlacementComplete => TimeSpan.FromMilliseconds(1050),
+            GameFeedbackCue.TargetLocked => TimeSpan.FromMilliseconds(1800),
+            GameFeedbackCue.Hit => TimeSpan.FromMilliseconds(1800),
+            GameFeedbackCue.Miss => TimeSpan.FromMilliseconds(2200),
+            GameFeedbackCue.Sunk => TimeSpan.FromMilliseconds(2400),
+            GameFeedbackCue.PlayerSunk => TimeSpan.FromMilliseconds(2400),
+            GameFeedbackCue.Win => TimeSpan.FromMilliseconds(3500),
+            GameFeedbackCue.Loss => TimeSpan.FromMilliseconds(3900),
+            GameFeedbackCue.Draw => TimeSpan.FromMilliseconds(2100),
             _ => TimeSpan.Zero
         };
     }
 
-    private async Task RestoreMusicAfterCommanderVoiceAsync(int duckSequence, TimeSpan duckDuration)
+    private async Task RestoreMusicAfterDuckedAudioAsync(int duckSequence, TimeSpan duckDuration)
     {
         try
         {
@@ -1473,6 +1543,18 @@ public partial class BoardViewModel : ObservableObject
         GameFeedbackCue cue = shot.Result switch
         {
             AttackResult.Sunk => GameFeedbackCue.Sunk,
+            AttackResult.Hit => GameFeedbackCue.Hit,
+            _ => GameFeedbackCue.Miss
+        };
+
+        EmitFeedback(cue, shot.SunkShipName);
+    }
+
+    private void EmitEnemyShotFeedback(ShotInfo shot)
+    {
+        GameFeedbackCue cue = shot.Result switch
+        {
+            AttackResult.Sunk => GameFeedbackCue.PlayerSunk,
             AttackResult.Hit => GameFeedbackCue.Hit,
             _ => GameFeedbackCue.Miss
         };
@@ -2401,39 +2483,40 @@ public partial class BoardViewModel : ObservableObject
         SetEnemyTurnResolutionState(true);
         try
         {
-            await ShowThinkingPreludeAsync();
+            if (!TryGetNextEnemyTarget(out var target))
+            {
+                IsGameOver = true;
+                TurnMessage = "Draw";
+                StatusMessage = "No remaining shots.";
+                EnemyLastShotMessage = "Enemy last shot: --";
+                RecordGameOutcome(GameOutcome.Draw);
+                EmitFeedback(GameFeedbackCue.Draw);
+                RevealEnemyFleet();
+                ApplyAutoBoardFocus();
+                ShowGameOverOverlay(GameOutcome.Draw);
+                return;
+            }
+
+            await ShowThinkingPreludeAsync(target);
 
             if (sessionId != _gameSessionId || IsGameOver)
                 return;
 
-            await EnemyTakeTurnCinematicAsync(sessionId);
+            await EnemyTakeTurnCinematicAsync(sessionId, target);
         }
         finally
         {
             SetEnemyTurnResolutionState(false);
             if (sessionId == _gameSessionId)
                 ClearTurnTransition();
+            ClearEnemyThinkingTarget();
         }
     }
 
-    private async Task EnemyTakeTurnCinematicAsync(int sessionId)
+    private async Task EnemyTakeTurnCinematicAsync(int sessionId, BoardCoordinate target)
     {
         if (_playerBoard is null)
             return;
-
-        if (!TryGetNextEnemyTarget(out var target))
-        {
-            IsGameOver = true;
-            TurnMessage = "Draw";
-            StatusMessage = "No remaining shots.";
-            EnemyLastShotMessage = "Enemy last shot: --";
-            RecordGameOutcome(GameOutcome.Draw);
-            EmitFeedback(GameFeedbackCue.Draw);
-            RevealEnemyFleet();
-            ApplyAutoBoardFocus();
-            ShowGameOverOverlay(GameOutcome.Draw);
-            return;
-        }
 
         int targetIndex = target.Row * Size + target.Col;
         BoardCellVm? targetCell = targetIndex >= 0 && targetIndex < PlayerCells.Count
@@ -2441,11 +2524,13 @@ public partial class BoardViewModel : ObservableObject
             : null;
         string targetCoordinate = ToBoardCoordinate(target.Row, target.Col);
 
+        ClearEnemyThinkingTarget();
         targetCell?.SetTargetLocked(true);
         try
         {
+            EmitFeedback(GameFeedbackCue.TargetLocked);
             await PauseForDramaAsync(
-                _random.Next(260, 541),
+                EnemyTargetLockDelayMilliseconds,
                 $"Enemy lock acquired at {targetCoordinate}. Brace for impact.",
                 showTransitionCard: true,
                 transitionTitle: "Incoming Fire",
@@ -2469,7 +2554,7 @@ public partial class BoardViewModel : ObservableObject
             }
 
             OnPropertyChanged(nameof(ScoreLine));
-            EmitShotFeedback(enemyShot);
+            EmitEnemyShotFeedback(enemyShot);
 
             EnemyLastShotMessage = $"Enemy last shot: {targetCoordinate} - {enemyShot.Message}";
             StatusMessage = BuildEnemyShotCallout(targetCoordinate, enemyShot);
@@ -2542,7 +2627,7 @@ public partial class BoardViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(ScoreLine));
-        EmitShotFeedback(enemyShot);
+        EmitEnemyShotFeedback(enemyShot);
 
         if (_playerBoard.AllShipsSunk)
         {
@@ -2653,7 +2738,9 @@ public enum GameFeedbackCue
     Sunk = 5,
     Win = 6,
     Loss = 7,
-    Draw = 8
+    Draw = 8,
+    PlayerSunk = 9,
+    TargetLocked = 10
 }
 
 public readonly record struct PlayerShotRecord(int TurnNumber, int Row, int Col, bool IsHit);

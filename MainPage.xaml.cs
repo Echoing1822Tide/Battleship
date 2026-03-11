@@ -440,12 +440,11 @@ public partial class MainPage : ContentPage
                 TurnTransitionScrim.Opacity = 1;
                 TurnTransitionCard.Opacity = 1;
                 TurnTransitionCard.Scale = 1;
-                TurnTransitionReticle.Opacity = 1;
-                TurnTransitionReticle.Scale = 1;
-                TurnTransitionPulseRing.Opacity = 0.28;
+                TurnTransitionHalo.Opacity = 1;
+                TurnTransitionHalo.Scale = 1;
+                TurnTransitionPulseRing.Opacity = 0.32;
                 TurnTransitionPulseRing.Scale = 1;
-                TurnTransitionCoordinateChip.Opacity = 1;
-                TurnTransitionCoordinateChip.Scale = 1;
+                TurnTransitionSweepHost.Opacity = 1;
                 TurnTransitionSweepHost.Rotation = 0;
                 return;
             }
@@ -455,25 +454,23 @@ public partial class MainPage : ContentPage
 
             TurnTransitionScrim.Opacity = 0;
             TurnTransitionCard.Opacity = 0;
-            TurnTransitionCard.Scale = 0.92;
-            TurnTransitionReticle.Opacity = 0;
-            TurnTransitionReticle.Scale = 2.1;
-            TurnTransitionPulseRing.Opacity = 0.08;
-            TurnTransitionPulseRing.Scale = 0.84;
-            TurnTransitionCoordinateChip.Opacity = 0;
-            TurnTransitionCoordinateChip.Scale = 0.74;
+            TurnTransitionCard.Scale = 0.94;
+            TurnTransitionHalo.Opacity = 0;
+            TurnTransitionHalo.Scale = 0.82;
+            TurnTransitionPulseRing.Opacity = 0.1;
+            TurnTransitionPulseRing.Scale = 0.76;
+            TurnTransitionSweepHost.Opacity = 0.34;
             TurnTransitionSweepHost.Rotation = 0;
 
             await Task.WhenAll(
                 TurnTransitionScrim.FadeToAsync(1, intro, Easing.CubicOut),
                 TurnTransitionCard.FadeToAsync(1, intro, Easing.CubicOut),
                 TurnTransitionCard.ScaleToAsync(1, intro, Easing.CubicOut),
-                TurnTransitionReticle.FadeToAsync(1, intro, Easing.CubicOut),
-                TurnTransitionReticle.ScaleToAsync(1, intro, Easing.CubicOut),
-                TurnTransitionPulseRing.FadeToAsync(0.3, intro, Easing.CubicOut),
+                TurnTransitionHalo.FadeToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionHalo.ScaleToAsync(1, intro, Easing.CubicOut),
+                TurnTransitionPulseRing.FadeToAsync(0.34, intro, Easing.CubicOut),
                 TurnTransitionPulseRing.ScaleToAsync(1.12, intro, Easing.SinOut),
-                TurnTransitionCoordinateChip.FadeToAsync(1, intro, Easing.CubicOut),
-                TurnTransitionCoordinateChip.ScaleToAsync(1, intro, Easing.SpringOut),
+                TurnTransitionSweepHost.FadeToAsync(1, intro, Easing.CubicOut),
                 TurnTransitionSweepHost.RotateToAsync(360, sweep, Easing.Linear));
         });
     }

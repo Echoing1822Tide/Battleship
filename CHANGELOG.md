@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] - 2026-03-11
+
+### Changed
+- Corrected the LAN startup/title presentation so the intro now covers the full window with a black background and shows the packaged `vs_code.png` logo card.
+- Expanded LAN commander audio routing to use the supplied `User-Player_Vessel_Destroyed.wav`, `Victory!!.wav`, `Victory.wav`, `Lost.wav`, `Enemy_Won.wav`, and `War_Over.wav` clips while ducking music to `2%` during gameplay audio playback.
+
+### Release
+- `v2.2.4` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.4-win-x64.zip`.
+
+## [1.9.4] - 2026-03-11
+
+### Changed
+- Shortened solo CPU strike analysis to `2-4` seconds and replaced the giant center reticle with a floating thinking bubble while a roaming board target lock sweeps the player fleet before committing with the supplied `Target_Locked.wav` cue.
+- Corrected the solo startup/title presentation so the intro now covers the full window with a black background and shows the packaged `vs_code.png` logo card.
+- Expanded solo commander audio routing to use the supplied `User-Player_Vessel_Destroyed.wav`, `Victory!!.wav`, `Victory.wav`, `Lost.wav`, `Enemy_Won.wav`, and `War_Over.wav` clips while ducking music to `2%` during gameplay audio playback.
+
+### Release
+- `v1.9.4` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `BattleshipMaui-v1.9.4-win-x64.zip`.
+
 ## [2.2.3] - 2026-03-10
 
 ### Changed
