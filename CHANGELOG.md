@@ -21,6 +21,28 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `v2.2.0` is in **Public Release** status.
 - Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.0-win-x64.zip`.
 
+## [2.2.1] - 2026-03-10
+
+### Changed
+- Replaced the LAN startup narration with the exact supplied `Echo_startup.wav`, `VS_Code_startup.wav`, and `Title.wav` files.
+- Replaced the LAN commander callouts with the exact supplied `Direct_Hit.wav`, `Target_Missed.wav`, and `Enemy_Vessel_Destroyed.wav` files.
+- Swapped the second startup card artwork to the official VS Code logo asset.
+
+### Release
+- `v2.2.1` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.1-win-x64.zip`.
+
+## [1.9.1] - 2026-03-10
+
+### Changed
+- Replaced the solo startup narration with the exact supplied `Echo_startup.wav`, `VS_Code_startup.wav`, and `Title.wav` files.
+- Replaced the solo commander callouts with the exact supplied `Direct_Hit.wav`, `Target_Missed.wav`, and `Enemy_Vessel_Destroyed.wav` files.
+- Swapped the second startup card artwork to the official VS Code logo asset.
+
+### Release
+- `v1.9.1` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `BattleshipMaui-v1.9.1-win-x64.zip`.
+
 ## [1.9.0] - 2026-03-10
 
 ### Added

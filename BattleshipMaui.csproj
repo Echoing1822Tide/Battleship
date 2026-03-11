@@ -8,10 +8,10 @@
 		<AppFlavor Condition="'$(AppFlavor)' == ''">Solo</AppFlavor>
 		<PublicAppName Condition="'$(AppFlavor)' == 'Lan'">LANBattleshipMAUI</PublicAppName>
 		<PublicAppName Condition="'$(AppFlavor)' != 'Lan'">BattleshipMaui</PublicAppName>
-		<PublicAppVersion Condition="'$(AppFlavor)' == 'Lan'">2.2.0</PublicAppVersion>
-		<PublicAppVersion Condition="'$(AppFlavor)' != 'Lan'">1.9.0</PublicAppVersion>
-		<PublicApplicationVersion Condition="'$(AppFlavor)' == 'Lan'">2200</PublicApplicationVersion>
-		<PublicApplicationVersion Condition="'$(AppFlavor)' != 'Lan'">1900</PublicApplicationVersion>
+		<PublicAppVersion Condition="'$(AppFlavor)' == 'Lan'">2.2.1</PublicAppVersion>
+		<PublicAppVersion Condition="'$(AppFlavor)' != 'Lan'">1.9.1</PublicAppVersion>
+		<PublicApplicationVersion Condition="'$(AppFlavor)' == 'Lan'">2201</PublicApplicationVersion>
+		<PublicApplicationVersion Condition="'$(AppFlavor)' != 'Lan'">1901</PublicApplicationVersion>
 
 		<!-- MAUI essentials -->
 		<UseMaui>true</UseMaui>
@@ -61,6 +61,12 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Link>%(Filename)%(Extension)</Link>
+		</Content>
+		<Content Include="assets\audio\*.wav">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			<Link>assets\audio\%(Filename)%(Extension)</Link>
+			<TargetPath>assets\audio\%(Filename)%(Extension)</TargetPath>
 		</Content>
 		<Content Include="Resources\Images\explosion.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

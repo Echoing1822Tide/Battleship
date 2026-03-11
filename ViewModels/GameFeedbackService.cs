@@ -278,9 +278,9 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
 
         string? phrase = cue switch
         {
-            GameFeedbackCue.Hit => "Target hit!",
-            GameFeedbackCue.Miss => "Target miss.",
-            GameFeedbackCue.Sunk => "Target destroyed!",
+            GameFeedbackCue.Hit => "Direct hit!",
+            GameFeedbackCue.Miss => "Target missed.",
+            GameFeedbackCue.Sunk => "Enemy vessel destroyed.",
             _ => null
         };
 
@@ -331,6 +331,7 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
         {
             GameFeedbackCue.Hit => AppAudio.CommanderTargetHit,
             GameFeedbackCue.Miss => AppAudio.CommanderTargetMiss,
+            GameFeedbackCue.Sunk => AppAudio.CommanderTargetSunk,
             _ => null
         };
 
@@ -436,7 +437,8 @@ public sealed class DefaultGameFeedbackService : IGameFeedbackService
             string[] clips =
             {
                 AppAudio.CommanderTargetHit,
-                AppAudio.CommanderTargetMiss
+                AppAudio.CommanderTargetMiss,
+                AppAudio.CommanderTargetSunk
             };
 
             var players = new Dictionary<string, MediaPlayer>(StringComparer.OrdinalIgnoreCase);

@@ -2,8 +2,8 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![MAUI](https://img.shields.io/badge/Framework-.NET%20MAUI-0f6cbd)](https://learn.microsoft.com/dotnet/maui/)
-[![Solo Release](https://img.shields.io/badge/BattleshipMaui-v1.9.0-2ea44f)](#versioning--releases)
-[![LAN Release](https://img.shields.io/badge/LANBattleshipMAUI-v2.2.0-2ea44f)](#versioning--releases)
+[![Solo Release](https://img.shields.io/badge/BattleshipMaui-v1.9.1-2ea44f)](#versioning--releases)
+[![LAN Release](https://img.shields.io/badge/LANBattleshipMAUI-v2.2.1-2ea44f)](#versioning--releases)
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE.md)
 
 A polished Battleship game built with .NET MAUI and a shared C# game core. This repository now publishes 2 separate Windows apps from the same codebase:
@@ -14,8 +14,8 @@ A polished Battleship game built with .NET MAUI and a shared C# game core. This 
 - Press `F11` in either release to toggle true Windows full-screen mode on or off after launch.
 
 ## Versioning & Releases
-- Current solo public app release: `BattleshipMaui v1.9.0`
-- Current LAN public app release: `LANBattleshipMAUI v2.2.0`
+- Current solo public app release: `BattleshipMaui v1.9.1`
+- Current LAN public app release: `LANBattleshipMAUI v2.2.1`
 - Release history and public-release notes: [CHANGELOG.md](./CHANGELOG.md)
 - Tag mapping:
   - `v1.x.x` publishes the solo `BattleshipMaui` line.
@@ -23,28 +23,28 @@ A polished Battleship game built with .NET MAUI and a shared C# game core. This 
 - Public distribution format: self-contained Windows `win-x64` zip
 
 ## Release Readiness
-- `BattleshipMaui v1.9.0` is in **Public Release** status.
-- `LANBattleshipMAUI v2.2.0` is in **Public Release** status.
+- `BattleshipMaui v1.9.1` is in **Public Release** status.
+- `LANBattleshipMAUI v2.2.1` is in **Public Release** status.
 
 ## Product Lines
 
 ### BattleshipMaui
 - Original single-player Battleship against the computer enemy
-- Borderless full-screen launch with cinematic startup title cards and spoken intro audio
+- Borderless full-screen launch with cinematic startup title cards driven by the supplied `Echo_startup.wav`, `VS_Code_startup.wav`, and `Title.wav` files
 - Manual fleet placement with hover preview and right-click rotation
 - Enlarged combat boards with compact in-game chrome so the window stays focused on the 2 boards
-- Default turn-cinematic strike overlay with commander voice hit/miss callouts
+- Default turn-cinematic strike overlay with supplied commander voice hit/miss/destroyed callouts
 - `Esc` command menu now holds the former settings panel plus mission controls during play
 - Adjustable CPU difficulty from the `Esc` command menu
 - Persistent stats, post-game recap, music, FX, and visual themes
 
 ### LANBattleshipMAUI
 - Dedicated LAN release for 2 players on the same local network
-- Borderless full-screen launch with cinematic startup title cards and spoken intro audio
+- Borderless full-screen launch with cinematic startup title cards driven by the supplied `Echo_startup.wav`, `VS_Code_startup.wav`, and `Title.wav` files
 - Host/join flow directly in the app header
 - Private local fleet placement on both PCs
 - Placement layout tuned so rows `I` and `J` remain visible while deploying fleets
-- Enlarged combat boards, optional turn-cinematic strike overlay, and hit-only intel bubble pop-up after animated impacts
+- Enlarged combat boards, optional turn-cinematic strike overlay, supplied commander voice hit/miss/destroyed callouts, and a hit-only intel bubble pop-up after animated impacts
 - `Esc` command menu now holds the former settings panel plus mission controls during play
 - Synced alternating turns, synced rematch via `New Mission`, and session disconnect support
 
@@ -92,14 +92,14 @@ Publish both public releases together:
 ```
 
 This creates:
-- `artifacts\release\BattleshipMaui-v1.9.0-win-x64.zip`
-- `artifacts\release\BattleshipMaui-v1.9.0-win-x64.sha256`
-- `artifacts\release\LANBattleshipMAUI-v2.2.0-win-x64.zip`
-- `artifacts\release\LANBattleshipMAUI-v2.2.0-win-x64.sha256`
+- `artifacts\release\BattleshipMaui-v1.9.1-win-x64.zip`
+- `artifacts\release\BattleshipMaui-v1.9.1-win-x64.sha256`
+- `artifacts\release\LANBattleshipMAUI-v2.2.1-win-x64.zip`
+- `artifacts\release\LANBattleshipMAUI-v2.2.1-win-x64.sha256`
 
 After extracting the zips, launch:
-- `BattleshipMaui-v1.9.0-win-x64\BattleshipMaui.exe`
-- `LANBattleshipMAUI-v2.2.0-win-x64\LANBattleshipMAUI.exe`
+- `BattleshipMaui-v1.9.1-win-x64\BattleshipMaui.exe`
+- `LANBattleshipMAUI-v2.2.1-win-x64\LANBattleshipMAUI.exe`
 
 The public zips are built as:
 - `.NET self-contained`
@@ -107,7 +107,7 @@ The public zips are built as:
 - unpackaged Windows desktop output
 
 ## LAN Session Setup
-Use the dedicated LAN build: `LANBattleshipMAUI v2.2.0`.
+Use the dedicated LAN build: `LANBattleshipMAUI v2.2.1`.
 
 1. Put the same published LAN zip on both PCs.
 2. Extract the zip on both PCs and launch `LANBattleshipMAUI.exe`.
@@ -169,7 +169,7 @@ If the connection fails:
 - `Theme Shift` and the theme picker: switch among 10 visual themes
 - `F11`: toggles true Windows full-screen mode on or off
 - `Turn Cinematic Overlay`: enables or disables the animated strike transition
-- `Commander Voice`: enables or disables spoken `Target hit` / `Target miss` battle callouts
+- `Commander Voice`: enables or disables the supplied spoken `Direct hit!`, `Target missed.`, and `Enemy vessel destroyed.` battle callouts
 - `Rotate` or right-click: rotates the selected ship during placement
 
 ## Testing
