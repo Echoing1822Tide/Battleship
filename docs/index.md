@@ -13,8 +13,8 @@ Both releases are in **Public Release** status and ship as self-contained Window
 
 ## Current Highlights
 
-- `BattleshipMaui v1.9.12` now restores the last known-good Windows startup full-screen activation flow so the published app opens with a visible WinUI window again.
-- `LANBattleshipMAUI v2.2.12` now restores the last known-good Windows startup full-screen activation flow so the published app opens with a visible WinUI window again.
+- `BattleshipMaui v1.9.12` now delays the animated ocean-backdrop startup work until after the first window show so the published app opens visibly again without losing the moving water effect.
+- `LANBattleshipMAUI v2.2.12` now delays the animated ocean-backdrop startup work until after the first window show so the published app opens visibly again without losing the moving water effect.
 
 ## Quick Start
 

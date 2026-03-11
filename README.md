@@ -12,7 +12,7 @@ A polished Battleship game built with .NET MAUI and a shared C# game core. This 
 - `LANBattleshipMAUI`: a dedicated same-network multiplayer release for 2 Windows PCs on the same LAN.
 - Both releases now launch in borderless full screen, play a cinematic startup sequence on a true full-screen black intro layer, and use `Esc` for the in-game command menu.
 - Both releases now layer a slower drifting ocean backdrop behind the UI and render the boards as translucent tactical glass over moving water with sonar ripples on cell taps.
-- Both releases now restore the last known-good Windows startup full-screen activation flow so the main app window opens visibly again while keeping `F11` full-screen support.
+- Both releases now delay the ocean-backdrop animation startup until after first window show so the main app window opens visibly again while keeping the moving water effect and `F11` full-screen support.
 - Press `F11` in either release to toggle true Windows full-screen mode on or off after launch.
 
 ## Versioning & Releases

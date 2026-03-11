@@ -46,9 +46,11 @@ public sealed class OceanBackdropAnimationBehavior : Behavior<Grid>
         if (surface is null || !surface.IsVisible || _animationCts is not null)
             return;
 
+        ResetBackdropVisuals(surface);
+
         var cts = new CancellationTokenSource();
         _animationCts = cts;
-        _ = RunBackdropLoopAsync(surface, cts.Token);
+        _ = RunBackdropLoopWhenReadyAsync(surface, cts.Token);
     }
 
     private void StopAnimation(bool resetVisual)
@@ -130,6 +132,26 @@ public sealed class OceanBackdropAnimationBehavior : Behavior<Grid>
                 });
             }
         }
+    }
+
+    private async Task RunBackdropLoopWhenReadyAsync(Grid surface, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay((int)ScaleDuration(1200), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (_associatedObject is null || !ReferenceEquals(_associatedObject, surface) || !surface.IsVisible)
+        {
+            StopAnimation(resetVisual: true);
+            return;
+        }
+
+        await RunBackdropLoopAsync(surface, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task AnimatePhaseAsync(
