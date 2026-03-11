@@ -15,11 +15,17 @@ namespace BattleshipMaui;
 
 public partial class MainPage : ContentPage
 {
+    private const double EnemyThinkingReticleSize = 62;
+    private const double EnemyThinkingReticleMargin = 22;
+
     private BoardViewModel? _viewModel;
     private BoardViewMode _currentBoardMode = BoardViewMode.Enemy;
     private bool _startupSequenceStarted;
     private bool _startupSequenceCompleted;
     private CancellationTokenSource? _startupSequenceCts;
+    private CancellationTokenSource? _enemyThinkingReticleCts;
+    private CancellationTokenSource? _enemyThinkingReticlePulseCts;
+    private readonly Random _enemyThinkingReticleRandom = new();
 #if WINDOWS
     private MediaPlayer? _startupAudioPlayer;
 #endif
@@ -54,6 +60,7 @@ public partial class MainPage : ContentPage
         CommandCenterBoardHost.IsVisible = true;
         EnemyBoardPage.IsVisible = true;
         PlayerBoardPage.IsVisible = true;
+        ConfigureEnemyThinkingReticleLayout();
         ApplyOverlayBlurBackdrop();
 
         if (_viewModel is not null)
@@ -75,6 +82,12 @@ public partial class MainPage : ContentPage
             _startupSequenceCts = new CancellationTokenSource();
             _ = RunStartupSequenceAsync(_startupSequenceCts.Token);
         }
+    }
+
+    protected override void OnDisappearing()
+    {
+        _ = ResetEnemyThinkingReticleAsync();
+        base.OnDisappearing();
     }
 
     public void HandleEscapeKey()
@@ -108,11 +121,26 @@ public partial class MainPage : ContentPage
         if (e.PropertyName == nameof(BoardViewModel.IsTurnTransitionActive) && _viewModel.IsTurnTransitionActive)
             _ = AnimateTurnTransitionAsync();
 
+        if (e.PropertyName == nameof(BoardViewModel.IsTurnTransitionActive))
+            _ = SynchronizeEnemyThinkingReticleAsync();
+
+        if (e.PropertyName == nameof(BoardViewModel.IsTurnTransitionActive) && !_viewModel.IsTurnTransitionActive)
+            _ = ResetEnemyThinkingReticleAsync();
+
         if (e.PropertyName == nameof(BoardViewModel.IsIntelBubbleVisible) && _viewModel.IsIntelBubbleVisible)
             _ = AnimateIntelBubbleAsync();
 
         if (e.PropertyName == nameof(BoardViewModel.CellPixelSize) || e.PropertyName == nameof(BoardViewModel.BoardPixelSize))
             RefreshBoardGridStructure();
+
+        if (e.PropertyName == nameof(BoardViewModel.CellPixelSize) || e.PropertyName == nameof(BoardViewModel.BoardPixelSize))
+            ConfigureEnemyThinkingReticleLayout();
+
+        if (e.PropertyName == nameof(BoardViewModel.IsThinkingPromptActive))
+            _ = SynchronizeEnemyThinkingReticleAsync();
+
+        if (e.PropertyName == nameof(BoardViewModel.TurnTransitionCoordinate))
+            _ = SynchronizeEnemyThinkingReticleAsync();
     }
 
     private async Task AnimateOverlayAsync(BoardViewModel vm)
@@ -493,6 +521,241 @@ public partial class MainPage : ContentPage
         {
             host.Children.Remove(ring);
         }
+    }
+
+    private void ConfigureEnemyThinkingReticleLayout()
+    {
+        AbsoluteLayout.SetLayoutBounds(
+            PlayerBoardThinkingReticle,
+            new Rect(0, 0, EnemyThinkingReticleSize, EnemyThinkingReticleSize));
+    }
+
+    private async Task SynchronizeEnemyThinkingReticleAsync()
+    {
+        if (_viewModel is null || !_viewModel.IsCpuMode)
+        {
+            await ResetEnemyThinkingReticleAsync();
+            return;
+        }
+
+        if (_viewModel.IsThinkingPromptActive)
+        {
+            StartEnemyThinkingReticleRoam();
+            return;
+        }
+
+        if (_viewModel.IsTurnTransitionActive &&
+            string.Equals(_viewModel.TurnTransitionTitle, "Incoming Fire", StringComparison.Ordinal) &&
+            TryParseBoardCoordinate(_viewModel.TurnTransitionCoordinate, out int row, out int col))
+        {
+            await AnimateEnemyThinkingReticleToCellAsync(row, col);
+            return;
+        }
+
+        await ResetEnemyThinkingReticleAsync();
+    }
+
+    private void StartEnemyThinkingReticleRoam()
+    {
+        if (_viewModel is null || !_viewModel.IsCpuMode)
+            return;
+
+        _enemyThinkingReticleCts?.Cancel();
+        _enemyThinkingReticleCts?.Dispose();
+        _enemyThinkingReticleCts = new CancellationTokenSource();
+        CancellationToken token = _enemyThinkingReticleCts.Token;
+
+        StartEnemyThinkingReticlePulse(token);
+        _ = RunEnemyThinkingReticleRoamAsync(token);
+    }
+
+    private void StartEnemyThinkingReticlePulse(CancellationToken linkedToken)
+    {
+        _enemyThinkingReticlePulseCts?.Cancel();
+        _enemyThinkingReticlePulseCts?.Dispose();
+        _enemyThinkingReticlePulseCts = CancellationTokenSource.CreateLinkedTokenSource(linkedToken);
+        CancellationToken token = _enemyThinkingReticlePulseCts.Token;
+        _ = RunEnemyThinkingReticlePulseAsync(token);
+    }
+
+    private void EnsureEnemyThinkingReticlePulse()
+    {
+        if (_enemyThinkingReticlePulseCts is not null && !_enemyThinkingReticlePulseCts.IsCancellationRequested)
+            return;
+
+        StartEnemyThinkingReticlePulse(CancellationToken.None);
+    }
+
+    private async Task RunEnemyThinkingReticleRoamAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                ConfigureEnemyThinkingReticleLayout();
+                if (!PlayerBoardThinkingReticle.IsVisible)
+                {
+                    PlayerBoardThinkingReticle.IsVisible = true;
+                    PlayerBoardThinkingReticle.Opacity = 0;
+                    PlayerBoardThinkingReticle.Scale = 0.88;
+                    PlayerBoardThinkingReticle.TranslationX = CreateRandomReticleX();
+                    PlayerBoardThinkingReticle.TranslationY = CreateRandomReticleY();
+                }
+            });
+
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await Task.WhenAll(
+                    PlayerBoardThinkingReticle.FadeToAsync(1, 180, Easing.CubicOut),
+                    PlayerBoardThinkingReticle.ScaleToAsync(1, 220, Easing.CubicOut));
+            });
+
+            while (!cancellationToken.IsCancellationRequested && _viewModel?.IsThinkingPromptActive == true)
+            {
+                double targetX = CreateRandomReticleX();
+                double targetY = CreateRandomReticleY();
+                uint duration = ScaleDuration(
+                    (uint)_enemyThinkingReticleRandom.Next(420, 761),
+                    AnimationRuntimeSettings.SpeedMultiplier);
+
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await PlayerBoardThinkingReticle.TranslateToAsync(targetX, targetY, duration, Easing.CubicInOut);
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task RunEnemyThinkingReticlePulseAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    PlayerBoardThinkingReticlePulse.Opacity = 0.68;
+                    PlayerBoardThinkingReticlePulse.Scale = 0.82;
+                });
+
+                uint duration = ScaleDuration(520, AnimationRuntimeSettings.SpeedMultiplier);
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Task.WhenAll(
+                        PlayerBoardThinkingReticlePulse.ScaleToAsync(1.28, duration, Easing.CubicOut),
+                        PlayerBoardThinkingReticlePulse.FadeToAsync(0.08, duration, Easing.CubicOut));
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task AnimateEnemyThinkingReticleToCellAsync(int row, int col)
+    {
+        _enemyThinkingReticleCts?.Cancel();
+        _enemyThinkingReticleCts?.Dispose();
+        _enemyThinkingReticleCts = null;
+
+        EnsureEnemyThinkingReticlePulse();
+
+        double cellSize = _viewModel?.CellPixelSize ?? BoardViewModel.CellSize;
+        double targetX = (col * cellSize) + (cellSize * 0.5) - (EnemyThinkingReticleSize * 0.5);
+        double targetY = (row * cellSize) + (cellSize * 0.5) - (EnemyThinkingReticleSize * 0.5);
+
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            ConfigureEnemyThinkingReticleLayout();
+            if (!PlayerBoardThinkingReticle.IsVisible)
+            {
+                PlayerBoardThinkingReticle.IsVisible = true;
+                PlayerBoardThinkingReticle.Opacity = 1;
+                PlayerBoardThinkingReticle.Scale = 1;
+            }
+
+            await PlayerBoardThinkingReticle.TranslateToAsync(
+                targetX,
+                targetY,
+                ScaleDuration(360, AnimationRuntimeSettings.SpeedMultiplier),
+                Easing.CubicOut);
+        });
+    }
+
+    private async Task ResetEnemyThinkingReticleAsync()
+    {
+        _enemyThinkingReticleCts?.Cancel();
+        _enemyThinkingReticleCts?.Dispose();
+        _enemyThinkingReticleCts = null;
+
+        _enemyThinkingReticlePulseCts?.Cancel();
+        _enemyThinkingReticlePulseCts?.Dispose();
+        _enemyThinkingReticlePulseCts = null;
+
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            PlayerBoardThinkingReticle.CancelAnimations();
+            PlayerBoardThinkingReticlePulse.CancelAnimations();
+            PlayerBoardThinkingReticle.IsVisible = false;
+            PlayerBoardThinkingReticle.Opacity = 0;
+            PlayerBoardThinkingReticle.Scale = 1;
+            PlayerBoardThinkingReticlePulse.Opacity = 0.56;
+            PlayerBoardThinkingReticlePulse.Scale = 1;
+        });
+    }
+
+    private double CreateRandomReticleX()
+    {
+        double boardSize = _viewModel?.BoardPixelSize ?? (BoardViewModel.Size * BoardViewModel.CellSize);
+        double minX = EnemyThinkingReticleMargin;
+        double maxX = Math.Max(minX, boardSize - EnemyThinkingReticleSize - EnemyThinkingReticleMargin);
+        if (maxX <= minX)
+            return minX;
+
+        return minX + (_enemyThinkingReticleRandom.NextDouble() * (maxX - minX));
+    }
+
+    private double CreateRandomReticleY()
+    {
+        double boardSize = _viewModel?.BoardPixelSize ?? (BoardViewModel.Size * BoardViewModel.CellSize);
+        double minY = EnemyThinkingReticleMargin;
+        double maxY = Math.Max(minY, boardSize - EnemyThinkingReticleSize - EnemyThinkingReticleMargin);
+        if (maxY <= minY)
+            return minY;
+
+        return minY + (_enemyThinkingReticleRandom.NextDouble() * (maxY - minY));
+    }
+
+    private static bool TryParseBoardCoordinate(string? coordinate, out int row, out int col)
+    {
+        row = -1;
+        col = -1;
+
+        if (string.IsNullOrWhiteSpace(coordinate) || coordinate.Length < 2)
+            return false;
+
+        char rowToken = char.ToUpperInvariant(coordinate[0]);
+        if (rowToken < 'A' || rowToken > 'J')
+            return false;
+
+        if (!int.TryParse(coordinate[1..], out int parsedColumn))
+            return false;
+
+        if (parsedColumn < 1 || parsedColumn > BoardViewModel.Size)
+            return false;
+
+        row = rowToken - 'A';
+        col = parsedColumn - 1;
+        return true;
     }
 
     private async Task AnimateTurnTransitionAsync()

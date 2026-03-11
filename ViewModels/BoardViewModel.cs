@@ -22,7 +22,6 @@ public partial class BoardViewModel : ObservableObject
     private readonly List<PlayerShotRecord> _currentGameShotHistory = new();
     private BoardCellVm? _placementPreviewAnchorCell;
     private BoardCellVm? _enemyHoverTargetCell;
-    private BoardCellVm? _enemyThinkingTargetCell;
     private bool _hasShownWelcomeOverlayThisSession;
     private bool _musicPlaybackUnlocked;
 
@@ -824,6 +823,7 @@ public partial class BoardViewModel : ObservableObject
             if (_isOverlayVisible == value) return;
             _isOverlayVisible = value;
             OnPropertyChanged();
+            UpdateBoardRenderMetrics();
             RefreshGameplayChrome();
         }
     }
@@ -1289,7 +1289,7 @@ public partial class BoardViewModel : ObservableObject
         await Task.Delay(ScalePause(milliseconds, jitter));
     }
 
-    private async Task ShowThinkingPreludeAsync(BoardCoordinate plannedTarget)
+    private async Task ShowThinkingPreludeAsync()
     {
         if (!ShouldUseCinematicTurnPacing)
             return;
@@ -1319,7 +1319,6 @@ public partial class BoardViewModel : ObservableObject
         int totalDuration = _random.Next(2000, 4001);
         int remaining = totalDuration;
         int dotTick = 0;
-        ClearEnemyThinkingTarget();
 
         for (int step = 0; step < steps.Length; step++)
         {
@@ -1335,7 +1334,6 @@ public partial class BoardViewModel : ObservableObject
             while (elapsed < stepDuration)
             {
                 ThinkingDots = new string('.', (dotTick % 3) + 1);
-                MoveEnemyThinkingTarget(plannedTarget, snapToPlannedTarget: step == steps.Length - 1 && stepDuration - elapsed <= 260);
                 dotTick++;
 
                 int slice = Math.Min(260, stepDuration - elapsed);
@@ -1349,68 +1347,6 @@ public partial class BoardViewModel : ObservableObject
         IsThinkingPromptActive = false;
         ThinkingDots = string.Empty;
         TurnTransitionTitle = "Command Update";
-    }
-
-    private void MoveEnemyThinkingTarget(BoardCoordinate plannedTarget, bool snapToPlannedTarget)
-    {
-        if (_playerBoard is null || PlayerCells.Count == 0)
-            return;
-
-        BoardCellVm? nextCell;
-        if (snapToPlannedTarget)
-        {
-            int plannedIndex = plannedTarget.Row * Size + plannedTarget.Col;
-            nextCell = plannedIndex >= 0 && plannedIndex < PlayerCells.Count
-                ? PlayerCells[plannedIndex]
-                : null;
-        }
-        else
-        {
-            nextCell = SelectNextEnemyThinkingTargetCell();
-        }
-
-        if (ReferenceEquals(nextCell, _enemyThinkingTargetCell))
-            return;
-
-        if (_enemyThinkingTargetCell is not null)
-            _enemyThinkingTargetCell.SetTargetLocked(false);
-
-        _enemyThinkingTargetCell = nextCell;
-        _enemyThinkingTargetCell?.SetTargetLocked(true);
-    }
-
-    private BoardCellVm? SelectNextEnemyThinkingTargetCell()
-    {
-        var candidates = PlayerCells
-            .Where(cell => cell.MarkerState == ShotMarkerState.None)
-            .ToArray();
-
-        if (candidates.Length == 0)
-            return null;
-
-        if (_enemyThinkingTargetCell is null)
-            return candidates[_random.Next(candidates.Length)];
-
-        var nearby = candidates
-            .Where(cell =>
-            {
-                int rowDelta = Math.Abs(cell.Row - _enemyThinkingTargetCell.Row);
-                int colDelta = Math.Abs(cell.Col - _enemyThinkingTargetCell.Col);
-                return rowDelta <= 2 && colDelta <= 2 && (rowDelta > 0 || colDelta > 0);
-            })
-            .ToArray();
-
-        var pool = nearby.Length > 0 ? nearby : candidates;
-        return pool[_random.Next(pool.Length)];
-    }
-
-    private void ClearEnemyThinkingTarget()
-    {
-        if (_enemyThinkingTargetCell is null)
-            return;
-
-        _enemyThinkingTargetCell.SetTargetLocked(false);
-        _enemyThinkingTargetCell = null;
     }
 
     private void ClearTurnTransition()
@@ -2497,7 +2433,7 @@ public partial class BoardViewModel : ObservableObject
                 return;
             }
 
-            await ShowThinkingPreludeAsync(target);
+            await ShowThinkingPreludeAsync();
 
             if (sessionId != _gameSessionId || IsGameOver)
                 return;
@@ -2509,7 +2445,6 @@ public partial class BoardViewModel : ObservableObject
             SetEnemyTurnResolutionState(false);
             if (sessionId == _gameSessionId)
                 ClearTurnTransition();
-            ClearEnemyThinkingTarget();
         }
     }
 
@@ -2524,7 +2459,6 @@ public partial class BoardViewModel : ObservableObject
             : null;
         string targetCoordinate = ToBoardCoordinate(target.Row, target.Col);
 
-        ClearEnemyThinkingTarget();
         targetCell?.SetTargetLocked(true);
         try
         {

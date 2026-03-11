@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.9] - 2026-03-11
+
+### Fixed
+- Kept the LAN game-over debrief on the compact combat header and reduced debrief board scale so the lower rows stay visible behind the overlay instead of cutting off `I` and `J`.
+
+### Release
+- `v2.2.9` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.9-win-x64.zip`.
+
 ## [2.2.8] - 2026-03-11
 
 ### Fixed
@@ -43,6 +52,16 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Release
 - `v2.2.5` is in **Public Release** status.
 - Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.5-win-x64.zip`.
+
+## [1.9.9] - 2026-03-11
+
+### Fixed
+- Replaced the solo enemy targeting prelude's jumpy cell-to-cell lock behavior with a free-roaming reticle that glides across the player board before settling on the final strike cell.
+- Kept the solo game-over debrief on the compact combat header and reduced debrief board scale so the lower rows stay visible behind the overlay instead of cutting off `I` and `J`.
+
+### Release
+- `v1.9.9` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `BattleshipMaui-v1.9.9-win-x64.zip`.
 
 ## [1.9.8] - 2026-03-11
 

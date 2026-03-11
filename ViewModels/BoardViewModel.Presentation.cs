@@ -6,6 +6,7 @@ public partial class BoardViewModel
 {
     private const double LanPlacementCellSize = 42;
     public const double BattleCellSize = 82;
+    private const double DebriefBattleCellSize = 72;
 
     private static double _activeRenderCellSize = CellSize;
     private bool _turnCinematicsEnabled;
@@ -22,16 +23,16 @@ public partial class BoardViewModel
 
     public double BoardCellSize => IsPlacementPhase
         ? (IsLanMode ? LanPlacementCellSize : CellSize)
-        : BattleCellSize;
+        : (IsOverlayVisible && IsGameOver ? DebriefBattleCellSize : BattleCellSize);
 
-    public double BoardTitleFontSize => IsPlacementPhase ? 36 : 52;
-    public double BoardAxisFontSize => IsPlacementPhase ? 12 : 18;
+    public double BoardTitleFontSize => IsPlacementPhase ? 36 : (IsOverlayVisible && IsGameOver ? 44 : 52);
+    public double BoardAxisFontSize => IsPlacementPhase ? 12 : (IsOverlayVisible && IsGameOver ? 16 : 18);
 
     public Thickness GameplayContentPadding => ShowCompactCommandHeader
         ? new Thickness(8, 6, 8, 10)
         : new Thickness(14, 10, 14, 14);
 
-    public bool ShowExpandedCommandHeader => IsPlacementPhase || IsGameOver || IsSettingsOpen || IsOverlayVisible;
+    public bool ShowExpandedCommandHeader => IsPlacementPhase || IsSettingsOpen;
 
     public bool ShowCompactCommandHeader => !ShowExpandedCommandHeader;
 

@@ -242,6 +242,37 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public void GameOverDebrief_UsesCompactHeaderAndScaledBoards()
+    {
+        var vm = new BoardViewModel(
+            new Random(1220),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with { HasSeenCommandBriefing = true }),
+            new NoOpFeedbackService());
+
+        PlaceAllShips(vm);
+
+        var isGameOverProperty = typeof(BoardViewModel).GetProperty(
+            nameof(BoardViewModel.IsGameOver),
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(isGameOverProperty);
+
+        isGameOverProperty!.SetValue(vm, true);
+
+        var showGameOverOverlayMethod = typeof(BoardViewModel).GetMethod(
+            "ShowGameOverOverlay",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(showGameOverOverlayMethod);
+
+        showGameOverOverlayMethod!.Invoke(vm, [GameOutcome.Win]);
+
+        Assert.True(vm.IsOverlayVisible);
+        Assert.False(vm.ShowExpandedCommandHeader);
+        Assert.True(vm.ShowCompactCommandHeader);
+        Assert.True(vm.BoardCellSize < BoardViewModel.BattleCellSize);
+    }
+
+    [Fact]
     public async Task EmitFeedback_HitCueTemporarilyDucksMusic_ForAudioPlayback()
     {
         var musicService = new RecordingBackgroundMusicService();
