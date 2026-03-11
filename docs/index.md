@@ -4,17 +4,17 @@ Desktop Battleship game built with .NET MAUI.
 
 ## Current Public Releases
 
-- `BattleshipMaui v1.9.2`
+- `BattleshipMaui v1.9.3`
   - Dedicated single-player Windows build against the onboard CPU
-- `LANBattleshipMAUI v2.2.2`
+- `LANBattleshipMAUI v2.2.3`
   - Dedicated same-network multiplayer Windows build for 2 PCs on the same LAN
 
 Both releases are in **Public Release** status and ship as self-contained Windows `win-x64` zip downloads.
 
 ## Current Highlights
 
-- `BattleshipMaui v1.9.2` adds a `Quit` action inside the `Esc` command menu and keeps the supplied startup/commander WAVs plus raw-key `F11` full-screen toggling.
-- `LANBattleshipMAUI v2.2.2` adds a `Quit` action inside the `Esc` command menu and keeps the supplied startup/commander WAVs plus raw-key `F11` full-screen toggling.
+- `BattleshipMaui v1.9.3` ducks background music to `5%` during commander hit, miss, and destroyed callouts, then restores the selected music volume after the voice line ends.
+- `LANBattleshipMAUI v2.2.3` ducks background music to `5%` during commander hit, miss, and destroyed callouts, then restores the selected music volume after the voice line ends.
 
 ## Quick Start
 
@@ -42,8 +42,8 @@ Publish a single flavor:
 
 Launch:
 
-- `artifacts\release\BattleshipMaui-v1.9.2-win-x64\BattleshipMaui.exe`
-- `artifacts\release\LANBattleshipMAUI-v2.2.2-win-x64\LANBattleshipMAUI.exe`
+- `artifacts\release\BattleshipMaui-v1.9.3-win-x64\BattleshipMaui.exe`
+- `artifacts\release\LANBattleshipMAUI-v2.2.3-win-x64\LANBattleshipMAUI.exe`
 
 ## GitHub Releases
 

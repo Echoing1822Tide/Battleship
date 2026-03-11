@@ -241,6 +241,47 @@ public class BoardViewModelTests
     }
 
     [Fact]
+    public async Task EmitFeedback_HitCueTemporarilyDucksMusic_ForCommanderVoice()
+    {
+        var musicService = new RecordingBackgroundMusicService();
+        var vm = new BoardViewModel(
+            new Random(123),
+            new InMemoryGameStatsStore(),
+            new InMemoryGameSettingsStore(GameSettingsSnapshot.Default with
+            {
+                HasSeenCommandBriefing = false,
+                MusicEnabled = true,
+                MusicVolume = 0.30,
+                HasConfiguredMusicPreference = true,
+                SoundEnabled = true,
+                CommanderVoiceEnabled = true,
+                HasConfiguredCommanderVoicePreference = true
+            }),
+            new NoOpFeedbackService(),
+            musicService);
+
+        vm.DismissOverlayCommand.Execute(null);
+        musicService.Reset();
+
+        var emitFeedback = typeof(BoardViewModel).GetMethod(
+            "EmitFeedback",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        Assert.NotNull(emitFeedback);
+
+        emitFeedback!.Invoke(vm, [GameFeedbackCue.Hit, null]);
+
+        await Task.Delay(200);
+
+        Assert.Contains(musicService.Calls, call => call.Enabled && Math.Abs(call.Volume - 0.05) < 0.0001);
+
+        await Task.Delay(1600);
+
+        Assert.Contains(musicService.Calls, call => call.Enabled && Math.Abs(call.Volume - 0.30) < 0.0001);
+        Assert.Equal(0.30, musicService.LastVolume, 3);
+    }
+
+    [Fact]
     public void PlayerCellTappedCommand_PlacesSelectedShip()
     {
         var vm = new BoardViewModel(new Random(13));
@@ -790,11 +831,18 @@ public class BoardViewModelTests
     {
         public bool LastEnabled { get; private set; }
         public double LastVolume { get; private set; }
+        public List<(bool Enabled, double Volume)> Calls { get; } = new();
 
         public void ApplySettings(bool enabled, double volume)
         {
             LastEnabled = enabled;
             LastVolume = volume;
+            Calls.Add((enabled, volume));
+        }
+
+        public void Reset()
+        {
+            Calls.Clear();
         }
     }
 

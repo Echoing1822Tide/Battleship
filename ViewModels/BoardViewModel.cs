@@ -93,6 +93,7 @@ public partial class BoardViewModel : ObservableObject
     private bool _isResolvingEnemyTurn;
     private bool _isResolvingPlayerShot;
     private int _gameSessionId;
+    private int _commanderVoiceDuckSequence;
 
     public const int Size = 10;
     public const double CellSize = 44;
@@ -102,6 +103,7 @@ public partial class BoardViewModel : ObservableObject
     public const double MissPegSize = 16;
     public const int PlayerShotRevealDelayMilliseconds = 3000;
     private const int PlayerTargetLockDelayMilliseconds = 420;
+    private const double CommanderVoiceDuckVolume = 0.05;
 
     private static readonly ShipTemplate[] FleetTemplates =
     {
@@ -1409,7 +1411,61 @@ public partial class BoardViewModel : ObservableObject
 
     private void EmitFeedback(GameFeedbackCue cue, string? shipName = null)
     {
+        DuckMusicForCommanderVoiceIfNeeded(cue);
         _feedbackService.Play(cue, SoundEnabled, SoundFxVolume, HapticsEnabled, ReduceMotionMode, CommanderVoiceEnabled, shipName);
+    }
+
+    private void DuckMusicForCommanderVoiceIfNeeded(GameFeedbackCue cue)
+    {
+        if (!SoundEnabled || !CommanderVoiceEnabled || !MusicEnabled || !_musicPlaybackUnlocked)
+            return;
+
+        TimeSpan duckDuration = ResolveCommanderVoiceDuckDuration(cue);
+        if (duckDuration <= TimeSpan.Zero)
+            return;
+
+        double restoreVolume = Math.Clamp(MusicVolume, 0, 1);
+        double duckVolume = Math.Min(CommanderVoiceDuckVolume, restoreVolume);
+        if (duckVolume >= restoreVolume - 0.0001)
+            return;
+
+        _backgroundMusicService.ApplySettings(enabled: true, volume: duckVolume);
+        unchecked
+        {
+            _commanderVoiceDuckSequence++;
+        }
+
+        int currentSequence = _commanderVoiceDuckSequence;
+        _ = RestoreMusicAfterCommanderVoiceAsync(currentSequence, duckDuration);
+    }
+
+    private static TimeSpan ResolveCommanderVoiceDuckDuration(GameFeedbackCue cue)
+    {
+        return cue switch
+        {
+            GameFeedbackCue.Hit => TimeSpan.FromMilliseconds(1450),
+            GameFeedbackCue.Miss => TimeSpan.FromMilliseconds(1900),
+            GameFeedbackCue.Sunk => TimeSpan.FromMilliseconds(2200),
+            _ => TimeSpan.Zero
+        };
+    }
+
+    private async Task RestoreMusicAfterCommanderVoiceAsync(int duckSequence, TimeSpan duckDuration)
+    {
+        try
+        {
+            await Task.Delay(duckDuration).ConfigureAwait(false);
+        }
+        catch
+        {
+            return;
+        }
+
+        if (duckSequence != _commanderVoiceDuckSequence)
+            return;
+
+        bool shouldPlayMusic = _musicPlaybackUnlocked && MusicEnabled;
+        _backgroundMusicService.ApplySettings(shouldPlayMusic, MusicVolume);
     }
 
     private void EmitShotFeedback(ShotInfo shot)

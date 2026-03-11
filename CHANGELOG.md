@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-03-10
+
+### Changed
+- Background music now ducks to `5%` while the LAN commander hit, miss, and destroyed voice lines play, then restores the selected music volume after playback.
+
+### Release
+- `v2.2.3` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `LANBattleshipMAUI-v2.2.3-win-x64.zip`.
+
+## [1.9.3] - 2026-03-10
+
+### Changed
+- Background music now ducks to `5%` while the solo commander hit, miss, and destroyed voice lines play, then restores the selected music volume after playback.
+
+### Release
+- `v1.9.3` is in **Public Release** status.
+- Public release distribution is a self-contained Windows `win-x64` zip named `BattleshipMaui-v1.9.3-win-x64.zip`.
+
 ## [2.2.2] - 2026-03-10
 
 ### Changed
